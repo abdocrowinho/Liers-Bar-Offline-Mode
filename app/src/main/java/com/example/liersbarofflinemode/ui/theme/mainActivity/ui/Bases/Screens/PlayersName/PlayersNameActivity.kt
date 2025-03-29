@@ -1,4 +1,4 @@
-package com.example.liersbarofflinemode
+package com.example.liersbarofflinemode.ui.theme.mainActivity.Screens.PlayersName
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -10,11 +10,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.liersbarofflinemode.ui.theme.LiersBarOfflineModeTheme
+import com.example.liersbarofflinemode.ui.theme.mainActivity.Screens.PlayersName.ui.theme.LiersBarOfflineModeTheme
 
-class MainActivity : ComponentActivity() {
+class PlayersNameActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -39,8 +38,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
     )
 }
 
-@Preview(showBackground = true, device = Devices.PIXEL_5 , showSystemUi = true
-)
+@Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
     LiersBarOfflineModeTheme {
