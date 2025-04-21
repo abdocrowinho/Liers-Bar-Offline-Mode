@@ -1,39 +1,49 @@
 package com.example.liersbarofflinemode.ui.theme.mainActivity.ui.Bases
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavArgument
 import androidx.navigation.NavHostController
+import androidx.navigation.PopUpToBuilder
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.liersbarofflinemode.ui.composable.gamePlayScreen.SinglePlayerScreen
+import com.example.domain.Entitys.UserEntity
+import com.example.liersbarofflinemode.ui.Utltiy.ArgumentsKeys
+import com.example.liersbarofflinemode.ui.ViewModels.EnterUsersScreenViewModel
+import com.example.liersbarofflinemode.ui.composable.PlayersNameScreen.EnterUsersScreen
+import com.example.liersbarofflinemode.ui.composable.gamePlayScreen.GamePlayScreen
+import com.example.liersbarofflinemode.ui.composable.singlePlayerScreen.Composable.SinglePlayerScreen
 import com.example.liersbarofflinemode.ui.composable.startScreen.MyApp
-import com.example.liersbarofflinemode.ui.theme.mainActivity.ui.Bases.Screens.PlayersName.MultiplePlayersScreenBody
 
 
+@Composable
+fun AppNavHost(
+    navController: NavHostController,
+    startDestination: String = NavigationItem.MainActivity.route
+) {
 
-    @Composable
-    fun AppNavHost(
-        navController: NavHostController,
-        startDestination: String = NavigationItem.MainActivity.route
-    ) {
-        NavHost(navController = navController, startDestination = startDestination) {
-            composable(NavigationItem.MainActivity.route) {
-                MyApp(modifier = Modifier, navController)
-            }
-            composable(NavigationItem.PlayersNameActivity.route){
-            MultiplePlayersScreenBody()
-            }
-            composable(NavigationItem.SinglePlayersScreen.route){
-                SinglePlayerScreen()
-            }
+    NavHost(navController = navController, startDestination = startDestination) {
+        composable(NavigationItem.MainActivity.route) {
+            MyApp(modifier = Modifier, navController)
+        }
+        composable(NavigationItem.PlayersNameActivity.route) {
+            val viewModel: EnterUsersScreenViewModel = hiltViewModel()
+            EnterUsersScreen(Modifier, viewModel, navController)
+        }
+        composable(NavigationItem.GamePlayScreen.route){
+            GamePlayScreen(navHostController = navController)
+        }
 
 
+        composable(NavigationItem.SinglePlayersScreen.route) {
+            SinglePlayerScreen()
         }
     }
+}
 
-
-
- enum class ScreensNames {
+enum class ScreensNames {
     HOME,
     PLAYERS_NAME,
     GAME_PLAY,
