@@ -12,34 +12,25 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.domain.Entitys.LanUserEntity
-import com.example.domain.Entitys.UserEntity
 import com.example.domain.Utlites.getMyIpAddress
 import com.example.liersbarofflinemode.R
 import com.example.liersbarofflinemode.ui.Utltiy.GetHeightConf
 import com.example.liersbarofflinemode.ui.Utltiy.GetWidthConf
-import com.example.liersbarofflinemode.ui.ViewModels.LanGamePlayViewModel
 import com.example.liersbarofflinemode.ui.theme.red_orange
 import com.example.liersbarofflinemode.ui.theme.warm_peach
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun LanPlayerAvatar(rotate: Float, playerState: LanUserEntity,modifier: Modifier , size:Dp ) {

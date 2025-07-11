@@ -23,6 +23,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.liersbarofflinemode.R
 import com.example.liersbarofflinemode.ui.Intent.EnterSinglePlayerIntent
@@ -38,7 +39,7 @@ import com.example.liersbarofflinemode.ui.theme.warm_peach
 @Composable
 fun EnterSinglePlayerScreen(
 
-    viewModel: EnterSingleUserViewModel,
+    viewModel: EnterSingleUserViewModel = hiltViewModel(),
     navController: NavHostController
 ) {
     val state by viewModel.enterState.collectAsState()
@@ -70,7 +71,6 @@ fun EnterSinglePlayerScreen(
          CustomOutLineBorder(
              width = GetWidthConf() * 0.15f,
              radius = 16.dp,
-             color = warm_peach ,
              text =user ,
              onTextChange = {newText -> user = newText},
              isError = userNameError1 != null
@@ -79,7 +79,7 @@ fun EnterSinglePlayerScreen(
             ButtonsRow(Modifier, action1 = {
                 viewModel.handleIntent(
                     EnterSinglePlayerIntent.DoneButton(userName = user)
-                )
+                ){}
             }, action2 = {})
 
             Spacer(modifier = Modifier.fillMaxHeight())
@@ -88,7 +88,7 @@ fun EnterSinglePlayerScreen(
     }
     LaunchedEffect(key1 = state) {
         if (state.player!=null && state.error == null) {
-            navController.navigate(NavigationItem.SingleGamePlay.route)
+            navController.navigate(NavigationItem.SingleGamePlayScreen.route)
         } else {
             val error = state.error
             userNameError1 = error

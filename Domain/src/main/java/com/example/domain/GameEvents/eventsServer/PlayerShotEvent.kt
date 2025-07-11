@@ -1,4 +1,13 @@
-package com.example.domain.GameEvents.eventsClients
+package com.example.domain.GameEvents.eventsServer
 
-class PlayerShotEvent {
-}
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
+@SerialName("PlayerShotEvent")
+data class PlayerShotEvent(
+    val playerReady : Boolean ,
+    val playerId : String ,
+    val isPlayerShot : Boolean ,
+    val isBullet : Boolean
+)

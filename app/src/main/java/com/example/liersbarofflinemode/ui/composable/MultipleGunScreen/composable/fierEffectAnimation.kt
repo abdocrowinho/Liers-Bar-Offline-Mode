@@ -1,9 +1,8 @@
-package com.example.liersbarofflinemode.ui.composable.gunScreen.composable
+package com.example.liersbarofflinemode.ui.composable.MultipleGunScreen.composable
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.rememberLottieComposition

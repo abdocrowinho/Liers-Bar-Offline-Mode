@@ -1,6 +1,6 @@
 @file:Suppress("UNUSED_EXPRESSION")
 
-package com.example.liersbarofflinemode.ui.composable.PlayersNameScreen
+package com.example.liersbarofflinemode.ui.composable.EnterPlayersNameScreen
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -20,8 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import com.example.liersbarofflinemode.R
 import com.example.liersbarofflinemode.ui.Utltiy.GetHeightConf
 import com.example.liersbarofflinemode.ui.Utltiy.GetWidthConf
-import com.example.liersbarofflinemode.ui.composable.PlayersNameScreen.Composable.ButtonsRow
-import com.example.liersbarofflinemode.ui.composable.PlayersNameScreen.Composable.TextFieldsRow
+import com.example.liersbarofflinemode.ui.composable.EnterPlayersNameScreen.Composable.ButtonsRow
+import com.example.liersbarofflinemode.ui.composable.EnterPlayersNameScreen.Composable.TextFieldsRow
 import com.example.liersbarofflinemode.ui.theme.red_orange
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color

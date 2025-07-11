@@ -1,5 +1,6 @@
 package com.example.domain.UseCase
 
+import com.example.domain.Repo.GamePlayRepo
 import com.example.domain.Validation.UseCase.UserNamesValidationUseCase
 import dagger.Module
 import dagger.Provides
@@ -15,7 +16,12 @@ class UseCaseProvider{
         return UserNamesValidationUseCase()
     }
     @Provides
-    fun providesGenerateImageUseCase():GenerateImageUseCase {
-        return GenerateImageUseCase()
+    fun providesValidationSinglePlayerUseCase():SinglePlayerValidation {
+        return SinglePlayerValidation()
     }
+    @Provides
+    fun providesGenerateImageUseCase(gamePlayRepo: GamePlayRepo):GenerateMultipleGameUseCase {
+        return GenerateMultipleGameUseCase(gamePlayRepo)
+    }
+
 }

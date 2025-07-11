@@ -1,7 +1,9 @@
-package com.example.domain.GameEvents
+package com.example.domain.Entitys
 
-@kotlinx.serialization.Serializable
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class Rank {
-    ACE, KING, QUEEN, JACK
+    ACE, KING, QUEEN, JACK,Joker
 }
 

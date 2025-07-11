@@ -1,6 +1,5 @@
-package com.example.data.DataSource.localeDataSource
+package com.example.data.DataSource.localeDataSource.RepoImpl
 
-import android.util.Log
 import com.example.domain.Entitys.UserEntity
 import com.example.domain.Repo.GamePlayRepo
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,7 +9,7 @@ import javax.inject.Singleton
 class GamePlayRepoImpl : GamePlayRepo {
      private var _playersState = (1..4).associateWith { MutableStateFlow<UserEntity?>(null) }
 
-     override fun generateImageRepo(playersNames : List<String>): List<UserEntity> {
+     override fun generateMultipleGame(playersNames : List<String>): List<UserEntity> {
           val listOfUsers = listOf(
                UserEntity(name = playersNames[0],
                     image = "https://robohash.org/${playersNames[0]}",

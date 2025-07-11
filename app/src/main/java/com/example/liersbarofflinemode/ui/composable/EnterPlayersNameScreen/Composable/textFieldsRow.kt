@@ -1,4 +1,4 @@
-package com.example.liersbarofflinemode.ui.composable.PlayersNameScreen.Composable
+package com.example.liersbarofflinemode.ui.composable.EnterPlayersNameScreen.Composable
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,7 +24,6 @@ fun TextFieldsRow(
             CustomOutLineBorder(
                 width = GetWidthConf() * 0.15f,
                 radius = 16.dp,
-                color = red_orange,
                 text = textFieldModel.text,
                 onTextChange = textFieldModel.onTextChange,
                 isError = textFieldModel.isError,

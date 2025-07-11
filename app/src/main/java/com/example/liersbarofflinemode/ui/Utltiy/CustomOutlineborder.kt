@@ -29,7 +29,6 @@ fun CustomOutLineBorder(
     modifier: Modifier = Modifier,
     width: Dp,
     radius: Dp,
-    color: Color,
     text:String,
     onTextChange:(String) -> Unit,
     isError: Boolean ,

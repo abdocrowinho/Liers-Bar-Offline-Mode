@@ -4,7 +4,7 @@ import com.example.domain.Entitys.UserEntity
 import com.example.domain.Repo.GamePlayRepo
 import javax.inject.Inject
 
-class GenerateImageUseCase @Inject constructor(
+class GenerateMultipleGameUseCase @Inject constructor(
     private val gamePLayRepo : GamePlayRepo
 )  {
     fun invoke(playersNames : List<String>):List<UserEntity>{

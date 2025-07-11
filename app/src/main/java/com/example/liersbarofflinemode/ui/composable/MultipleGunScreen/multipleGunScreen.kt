@@ -1,7 +1,8 @@
-package com.example.liersbarofflinemode.ui.composable.gunScreen
+package com.example.liersbarofflinemode.ui.composable.MultipleGunScreen
 
 import android.annotation.SuppressLint
 import android.media.MediaPlayer
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -31,19 +32,20 @@ import com.example.data.DataSource.localeDataSource.RepoImpl.GamePlayRepoImpl
 import com.example.domain.UseCase.GetPlayersStateUseCase
 import com.example.domain.UseCase.KillGameUseCase
 import com.example.domain.UseCase.SetPlayersUseCase
+import com.example.liersbarofflinemode.ui.Intent.GamePlayIntent
 import com.example.liersbarofflinemode.ui.Utltiy.GetWidthConf
 import com.example.liersbarofflinemode.ui.ViewModels.GamePlayViewModel
-import com.example.liersbarofflinemode.ui.composable.gunScreen.composable.AnimatedBullet
-import com.example.liersbarofflinemode.ui.composable.gunScreen.composable.FireEffectAnimation
-import com.example.liersbarofflinemode.ui.composable.gunScreen.composable.Gun
-import com.example.liersbarofflinemode.ui.composable.gunScreen.composable.NumberBulletsRow
+import com.example.liersbarofflinemode.ui.composable.MultipleGunScreen.composable.AnimatedBullet
+import com.example.liersbarofflinemode.ui.composable.MultipleGunScreen.composable.FireEffectAnimation
+import com.example.liersbarofflinemode.ui.composable.MultipleGunScreen.composable.Gun
+import com.example.liersbarofflinemode.ui.composable.MultipleGunScreen.composable.NumberBulletsRow
 
 @SuppressLint("UseOfNonLambdaOffsetOverload")
 @Composable
-fun GunScreen(viewModel: GamePlayViewModel = hiltViewModel(), navController: NavController, userid: Int?=0) {
+fun MultipleGunScreen(viewModel: GamePlayViewModel = hiltViewModel(), navController: NavController, userid: Int?=0) {
     val context = LocalContext.current
     val gunShotState by viewModel.gunShotState.collectAsState()
-
+val fireCounter = viewModel.fireCounter.collectAsState()
     val xBulletOffset by animateDpAsState(
         targetValue = if (gunShotState[userid]?.moveFireBullet == true) GetWidthConf() * -1 else 0.dp,
         animationSpec = tween(durationMillis = 5000), label = ""
@@ -84,8 +86,17 @@ fun GunScreen(viewModel: GamePlayViewModel = hiltViewModel(), navController: Nav
         Gun(
             modifier = Modifier.align(Alignment.Center),
             userid = userid?:0, navController = navController,
-            viewModel = viewModel
-        )
+        ){
+            Log.d("gun counter", fireCounter.value.toString())
+            if (fireCounter.value == 0) {
+                viewModel.handleIntent(GamePlayIntent.FireBullet(userid?:0)) {
+                    navController.popBackStack()
+                }
+
+            } else {
+                return@Gun
+            }
+        }
         AnimatedVisibility(visible =gunShotState[userid]?.bulletStateWord != null,
             enter = fadeIn(
             ), exit = fadeOut(animationSpec = tween(1400))
@@ -113,7 +124,7 @@ fun GunScreen(viewModel: GamePlayViewModel = hiltViewModel(), navController: Nav
 @Composable
 fun GunScreenPreview() {
     val savedStateHandle = SavedStateHandle()
-    GunScreen(
+    MultipleGunScreen(
         userid = 1,
         viewModel = GamePlayViewModel(SetPlayersUseCase(gamePlayRepo = GamePlayRepoImpl()),
             getPlayersUseCase = GetPlayersStateUseCase(gamePlayRepo = GamePlayRepoImpl()),

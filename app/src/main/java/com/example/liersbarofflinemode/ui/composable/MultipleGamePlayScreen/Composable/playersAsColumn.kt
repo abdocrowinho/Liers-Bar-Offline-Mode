@@ -1,4 +1,4 @@
-package com.example.liersbarofflinemode.ui.composable.gamePlayScreen.Composable
+package com.example.liersbarofflinemode.ui.composable.MultipleGamePlayScreen.Composable
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

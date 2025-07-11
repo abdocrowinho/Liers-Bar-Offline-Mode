@@ -1,4 +1,4 @@
-package com.example.liersbarofflinemode.ui.composable.PlayersNameScreen.Composable
+package com.example.liersbarofflinemode.ui.composable.EnterPlayersNameScreen.Composable
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.example.liersbarofflinemode.ui.Utltiy.GetWidthConf
-import com.example.liersbarofflinemode.ui.theme.mainActivity.ui.Bases.Screens.MainActivity.Composable.Button
+import com.example.liersbarofflinemode.ui.theme.mainActivity.ui.Bases.Screens.MainActivity.Composable.CustomWoodButton
 
 
 @Composable
@@ -22,11 +22,11 @@ fun ButtonsRow(
     Row(
         horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.Top
     ) {
-        Button(
+        CustomWoodButton(
             onClick = action1, text = "Start", height = .08f, width = .12f
         )
         Spacer(modifier = modifier.width(GetWidthConf() * .41f))
-        Button(onClick =action2, text = "Back", height = .08f, width = .12f)
+        CustomWoodButton(onClick =action2, text = "Back", height = .08f, width = .12f)
         Spacer(modifier = modifier.width(GetWidthConf() * .01f))
     }
 }

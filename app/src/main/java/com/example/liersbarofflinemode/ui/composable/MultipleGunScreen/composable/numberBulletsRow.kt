@@ -1,4 +1,4 @@
-package com.example.liersbarofflinemode.ui.composable.gunScreen.composable
+package com.example.liersbarofflinemode.ui.composable.MultipleGunScreen.composable
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement

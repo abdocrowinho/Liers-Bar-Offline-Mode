@@ -14,7 +14,7 @@ class UserNamesValidationUseCase() {
                 errors[index] = "field is required"
             } else {
                 if (userName.length < 4) {
-                    errors[index] = "field cant be less" +
+                    errors[index] = "field cant be less\n" +
                             " than 4 letters"
                 }
             }

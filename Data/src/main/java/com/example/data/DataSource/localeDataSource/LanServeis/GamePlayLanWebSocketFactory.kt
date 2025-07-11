@@ -1,5 +1,7 @@
-package com.example.domain.Repo
+package com.example.data.DataSource.localeDataSource.LanServeis
+
+import java.net.URI
 
 interface GamePlayLanWebSocketFactory {
-    fun create(uri:String,onSuccess:()->Unit , onErrorAction: (String)->Error):WebS
+    fun create(uri: URI, onSuccess:()->Unit, onErrorAction: (String)->Unit):GameWebSocketClient
 }
