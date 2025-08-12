@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.domain.Entitys.Card
 import com.example.domain.Entitys.LanUserEntity
 import com.example.domain.UseCase.GetLanPlayersUseCase
+import com.example.liersbarofflinemode.ui.Intent.EventsLanGamePlayIntent
 import com.example.liersbarofflinemode.ui.Intent.LanGamePlayIntent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -58,6 +59,13 @@ class LanGamePlayViewModel @Inject constructor(
                 Log.d( "delete ready card from List", _readyCard.value.toString())
 
             }
+        }
+    }
+    fun handleEvents(eventIntent : EventsLanGamePlayIntent){
+        when(eventIntent){
+            is EventsLanGamePlayIntent.CallLiarButton -> TODO()
+            EventsLanGamePlayIntent.DealCards -> TODO()
+            is EventsLanGamePlayIntent.ThrowCardsButton -> TODO()
         }
     }
 }

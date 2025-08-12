@@ -1,6 +1,11 @@
 package com.example.data.DataSource.Utltity
 
+import com.example.domain.GameEvents.CardPlayEvent
 import com.example.domain.GameEvents.Event
+import com.example.domain.GameEvents.JoinToGameEvent
+import com.example.domain.GameEvents.LiarCallEvent
+import com.example.domain.GameEvents.PlayerShotEvent
+import com.example.domain.GameEvents.RoomStateEvent
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
@@ -17,12 +22,11 @@ object JsonHelper {
 
             serializersModule = SerializersModule {
                 polymorphic(Event::class){
-                    subclass(Event.GameEvent::class,Event.GameEvent.serializer())
-                    subclass(Event.RoomStateEvent::class,Event.RoomStateEvent.serializer())
-                    subclass(Event.JoinedGameEvent::class,Event.JoinedGameEvent.serializer())
-                    subclass(Event.CardPlayEvent::class,Event.CardPlayEvent.serializer())
-                    subclass(Event.LiarCallEvent::class,Event.LiarCallEvent.serializer())
-                    subclass(Event.PlayerShotEvent::class,Event.PlayerShotEvent.serializer())
+                    subclass(RoomStateEvent::class,RoomStateEvent.serializer())
+                    subclass(JoinToGameEvent::class ,JoinToGameEvent.serializer())
+                    subclass(CardPlayEvent::class,CardPlayEvent.serializer())
+                    subclass(LiarCallEvent::class,LiarCallEvent.serializer())
+                    subclass(PlayerShotEvent::class,PlayerShotEvent.serializer())
 
                 }
             }
