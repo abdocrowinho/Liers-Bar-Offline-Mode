@@ -3,7 +3,7 @@ package com.example.liersbarofflinemode.ui.ViewModels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.domain.UseCase.GenerateImageUseCase
+import com.example.domain.UseCase.GenerateMultipleGameUseCase
 import com.example.domain.Validation.UseCase.UserNamesValidationUseCase
 import com.example.liersbarofflinemode.ui.Intent.EnterScreenIntent
 import com.example.liersbarofflinemode.ui.States.EnterScreenState
@@ -17,7 +17,7 @@ import javax.inject.Inject
 class EnterUsersScreenViewModel @Inject constructor
     (
     private val userNamesValidationUseCase: UserNamesValidationUseCase,
-    private val generateImageUseCase: GenerateImageUseCase
+    private val generateImageUseCase: GenerateMultipleGameUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(EnterScreenState())
@@ -60,5 +60,9 @@ class EnterUsersScreenViewModel @Inject constructor
         }
     }
 
-
+    override fun onCleared() {
+        super.onCleared()
+        _state.value.players = emptyList()
+        _state.value.errors = emptyMap()
+    }
 }

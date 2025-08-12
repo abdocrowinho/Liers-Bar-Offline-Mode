@@ -6,7 +6,7 @@ plugins {
 }
 
 
-android {
+    android {
     namespace = "com.example.liersbarofflinemode"
     compileSdk = 35
 
@@ -21,6 +21,7 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
     }
 
     buildTypes {
@@ -46,14 +47,19 @@ android {
         kotlinCompilerExtensionVersion = "1.5.1"
     }
     packaging {
+
         resources {
+            excludes += "META-INF/INDEX.LIST"
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
+            excludes += "META-INF/io.netty.versions.properties"
+        }}
+
 }
 
 dependencies {
-    implementation(libs.coil.compose) // أو آخر إصدار
+    implementation(libs.java.websocket)
+implementation(libs.lottie.compose)
+    implementation(libs.coil.compose)
     implementation (libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.hilt.android)
