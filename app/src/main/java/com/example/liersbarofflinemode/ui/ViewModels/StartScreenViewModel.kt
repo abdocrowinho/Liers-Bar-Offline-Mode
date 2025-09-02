@@ -1,12 +1,10 @@
 package com.example.liersbarofflinemode.ui.ViewModels
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.DataSource.localeDataSource.LanServeis.GameWebSocketServer
 import com.example.domain.Entitys.LanUserEntity
-import com.example.domain.Entitys.RoomEntity
-import com.example.domain.GameEvents.Event
+import com.example.domain.GameEvents.JoinToGameEvent
 import com.example.domain.UseCase.ConnectToRoomUseCase
 import com.example.domain.UseCase.GetRoomUseCase
 import com.example.domain.UseCase.SendEventUseCase
@@ -28,7 +26,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -64,7 +61,6 @@ private val _userName = MutableStateFlow<String>("")
                     val gameWebSocketServer = GameWebSocketServer(8080)
                     gameWebSocketServer.start()
                     createRoomUseCase.invoke(name)
-                    delay(2000)
                     connectToRoomUseCase.invoke(getMyIpAddress() , onSuccess = {
                         sendPlayer()
                     } , onError = { error->
@@ -134,15 +130,13 @@ private val _userName = MutableStateFlow<String>("")
     }
 
 private fun sendPlayer(){
-    val event = Event.JoinedGameEvent( LanUserEntity(
+    val event = JoinToGameEvent( LanUserEntity(
         name = _userName.value , id = 0 , image = "https://robohash.org/${_userName.value}", numOfShot = (1..6).random(), remainingBullets = 6,
         isAlive = true , ipAddress = getMyIpAddress() ,cards = mutableListOf()  )
     )
     sendEventUseCase.invoke(event)
 
     _navigationState.value = NavigationState.GoingToGame
-
-
-
 }
+
 }

@@ -6,27 +6,35 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.domain.Entitys.Card
 import com.example.domain.Entitys.LanUserEntity
+import com.example.domain.GameEvents.CardPlayEvent
+import com.example.domain.GameEvents.Event
+import com.example.domain.GameEvents.StartRoundEvent
 import com.example.domain.UseCase.GetLanPlayersUseCase
+import com.example.domain.UseCase.GetMessageEventUseCase
+import com.example.domain.UseCase.SendEventUseCase
 import com.example.liersbarofflinemode.ui.Intent.EventsLanGamePlayIntent
 import com.example.liersbarofflinemode.ui.Intent.LanGamePlayIntent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class LanGamePlayViewModel @Inject constructor(
- private   val getLanPlayersUseCase: GetLanPlayersUseCase
+ private   val getLanPlayersUseCase: GetLanPlayersUseCase,
+    private val sendEventUseCase: SendEventUseCase,
+    private val getMessageEventUseCase: GetMessageEventUseCase
 ) : ViewModel() {
-    private var _players = MutableStateFlow<List<LanUserEntity?>?>(null)
-    val players : StateFlow< List< LanUserEntity?>?> get() = _players
+    private var _players = MutableStateFlow<MutableList<LanUserEntity?>?>(null)
+    val players : StateFlow< MutableList< LanUserEntity?>?> get() = _players
     private var  _readyCard= MutableStateFlow<MutableList<Card>>(mutableListOf())
     val  readyCard : StateFlow<MutableList<Card>> get() = _readyCard
-    private var  _listReadyCards= MutableStateFlow<MutableList<Card>>(mutableListOf())
-    val  listReadyCards : StateFlow<List<Card>>get() = _listReadyCards
 
-
+private var _eventMessage = MutableSharedFlow<Event?>()
+    val eventChannel : SharedFlow<Event?>get()= _eventMessage
 
     init {
         viewModelScope.launch {
@@ -36,11 +44,21 @@ class LanGamePlayViewModel @Inject constructor(
 
             }
         }
+        viewModelScope.launch {
+            getMessageEventUseCase.invoke().collect { event ->
+                    _eventMessage.emit(event)
+                    Log.d("VM", "Event received in VM: $event")
+
+            }
+        }
+
     }
 
     fun handelIntentCards(intent: LanGamePlayIntent ){
         when(intent){
-            is LanGamePlayIntent.EmitCardsAreReady -> TODO()
+            is LanGamePlayIntent.EmitCardsAreReady -> {
+                // must implement
+            }
             is LanGamePlayIntent.AddReadyCard -> {
                 val currentList = _readyCard.value.toMutableList()
                  if (currentList.contains(intent.card) )return
@@ -64,8 +82,21 @@ class LanGamePlayViewModel @Inject constructor(
     fun handleEvents(eventIntent : EventsLanGamePlayIntent){
         when(eventIntent){
             is EventsLanGamePlayIntent.CallLiarButton -> TODO()
-            EventsLanGamePlayIntent.DealCards -> TODO()
-            is EventsLanGamePlayIntent.ThrowCardsButton -> TODO()
+            EventsLanGamePlayIntent.DealCards -> {
+                sendEventUseCase.invoke(StartRoundEvent)
+            }
+            is EventsLanGamePlayIntent.ThrowCardsButton -> {
+                val nextPlayer = if (eventIntent.playerId==4) 1 else{eventIntent.playerId.plus(1)}
+                sendEventUseCase.invoke(
+                    CardPlayEvent(eventIntent.playerId,
+                    card = _readyCard.value,
+                    nextPlayer = nextPlayer ,
+                    index = _readyCard.value.size
+                    )
+                )
+                _readyCard.value = mutableListOf()
+
+            }
         }
     }
 }
