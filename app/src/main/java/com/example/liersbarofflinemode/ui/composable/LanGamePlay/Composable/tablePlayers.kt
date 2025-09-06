@@ -2,15 +2,18 @@ package com.example.liersbarofflinemode.ui.composable.LanGamePlay.Composable
 
 import LanPlayerAvatar
 import ThrowCardsAnimation
+import android.media.MediaPlayer
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,6 +37,7 @@ import com.example.domain.Entitys.LanUserEntity
 import com.example.domain.Entitys.Rank
 import com.example.domain.GameEvents.CardPlayEvent
 import com.example.domain.GameEvents.RoomStateEvent
+import com.example.domain.GameEvents.WarningEvent
 import com.example.domain.Utlites.getMyIpAddress
 import com.example.liersbarofflinemode.R
 import com.example.liersbarofflinemode.ui.Intent.EventsLanGamePlayIntent
@@ -41,6 +45,8 @@ import com.example.liersbarofflinemode.ui.Utltiy.GetHeightConf
 import com.example.liersbarofflinemode.ui.Utltiy.GetWidthConf
 import com.example.liersbarofflinemode.ui.ViewModels.LanGamePlayViewModel
 import com.example.liersbarofflinemode.ui.theme.warm_peach
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @Composable
@@ -53,11 +59,12 @@ fun TablePlayers(lanGamePlayViewModel: LanGamePlayViewModel) {
     var cardCountState by remember { mutableIntStateOf(0) }
     var cardPlayerIdState by remember { mutableStateOf(-1) }
     var isFindCardsInTable by remember { mutableStateOf(false) }
+    var isWarning by remember { mutableStateOf(false) }
     var isMyTurn by remember { mutableStateOf(false) }
     var tableBase by remember { mutableStateOf<Rank?>(null) }
     var roundCounter by remember { mutableStateOf(-1) }
     var spokenText by remember { mutableStateOf("") }
-
+    var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
 
     val tts = remember {
         var tempTts: TextToSpeech? = null
@@ -135,6 +142,7 @@ fun TablePlayers(lanGamePlayViewModel: LanGamePlayViewModel) {
                     contentScale = ContentScale.FillBounds
                 )
         ) {
+            WarningBox(isWarning = isWarning)
             LanPlayerAvatar(
                 rotate = 0f,
                 playerState = me,
@@ -203,6 +211,17 @@ fun TablePlayers(lanGamePlayViewModel: LanGamePlayViewModel) {
                     .align(Alignment.BottomEnd)
                     .offset(x = GetWidthConf() * .02f * -1, y = GetHeightConf() * .15f * -1)
 
+            )
+            Image(painter = painterResource(id = R.drawable.warinig_image), contentDescription = "warning"
+            , modifier = Modifier
+                    .size(50.dp)
+                    .align(Alignment.BottomEnd)
+                    .offset(x = GetWidthConf() * .02f * -1,
+                        y = GetHeightConf() * .28f * -1)
+                    .clickable {
+                        Log.d("warning", "clicked")
+                        lanGamePlayViewModel.handleEvents(eventIntent = EventsLanGamePlayIntent.Warning)
+                    }
             )
 
             when (cardPlayerIdState) {
@@ -280,10 +299,42 @@ fun TablePlayers(lanGamePlayViewModel: LanGamePlayViewModel) {
                 roundCounter = event.round ?: 0
                 isMyTurn = activePlayer?.id == event.round
             }
+            if (event is WarningEvent){
+                isWarning = true
+
+                // قفل أي صوت شغال قبل
+                mediaPlayer?.let {
+                    if (it.isPlaying) {
+                        it.stop()
+                    }
+                    it.release()
+                }
+
+                mediaPlayer = MediaPlayer.create(context, R.raw.warning).apply {
+                    isLooping = true
+                    start()
+                }
+
+                // Coroutine مستقلة عشان ما توقفش الـ collect
+                launch {
+                    delay(3000)
+                    mediaPlayer?.let {
+                        if (it.isPlaying) {
+                            it.stop()
+                        }
+                        it.release()
+                    }
+                    mediaPlayer = null
+                    isWarning = false
+                }
+            }
+
+
+            }
 
         }
     }
-}
+
 
 @Composable
 fun HorizontalPlayers(modifier: Modifier, rightPlayer: LanUserEntity?, leftPlayer: LanUserEntity?) {

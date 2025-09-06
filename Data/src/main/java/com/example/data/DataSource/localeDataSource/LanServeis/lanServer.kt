@@ -8,6 +8,9 @@ import com.example.domain.GameEvents.Event
 import com.example.domain.GameEvents.JoinToGameEvent
 import com.example.domain.GameEvents.RoomStateEvent
 import com.example.domain.Utlites.Constant.listOfCard
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.java_websocket.WebSocket
@@ -24,10 +27,14 @@ class GameWebSocketServer(port: Int) : WebSocketServer(InetSocketAddress(port)) 
     var idCounter = 0
     var roundCounter = 0
     var tablesCards: MutableList<Card> = mutableListOf()
-    lateinit var tableBase: Card
+     var baseTable : Card? = null
     private var  listOfCards = mutableListOf(Card(rank = Rank.ACE, imageCard = 0,"",1))
     private var serverHandler : ServerHandler?=null
+    private var onStarted: (() -> Unit)? = null
 
+    fun setOnStartedListener(listener: () -> Unit) {
+        onStarted = listener
+    }
 
     init {
         listOfCards = listOfCard.toMutableList()
@@ -57,14 +64,28 @@ class GameWebSocketServer(port: Int) : WebSocketServer(InetSocketAddress(port)) 
         if (message == null) return
 
         println("📩 Message from ${conn.remoteSocketAddress}: $message")
+
+        val event =  Json.decodeFromString(Event.serializer(),message)
+
+        try {
+            serverHandler?.handle(conn = conn,event)
+
+
+        } catch (e: Exception) {
+            println("server ->  ❌ Failed to parse event: ${e.message}")
+        }
     }
 
 
-    private fun broadcastEvent(event: Event, except: WebSocket? = null) {
+
+    private fun broadcastEvent(event: Event) {
         val json = Json.encodeToString(Event.serializer(), event)
-        clients.forEach { client ->
-            if (client != except) {
+        val snapshot = clients.toList()
+        snapshot.forEach { client ->
+            try {
                 client.send(json)
+            } catch (e: Exception) {
+                println("❌ Failed to send to ${client.remoteSocketAddress}: ${e.message}")
             }
         }
     }
@@ -74,19 +95,20 @@ class GameWebSocketServer(port: Int) : WebSocketServer(InetSocketAddress(port)) 
         if (roundStarted) return
         roundStarted = true
         if (players.isNotEmpty()) {
-           this.listOfCards.shuffled()
+           this.listOfCards = this.listOfCards.shuffled().toMutableList()
 // update player with take new cards
             players.keys.forEach { conn ->
                 val player = players[conn]
-                val hand = listOfCard.take(5)
+                val hand = listOfCards.take(5)
+                listOfCards.removeAll(hand)
+
                 if (player != null) {
-                    listOfCard.toMutableList().removeAll(hand)
                     val updatePlayer = player.copy(cards = hand)
                     players[conn] = updatePlayer
                 }
 
             }
-
+            baseTable = listOfCards.random()
             //send to clients new event
 
             val allPlayers = players.values.map {
@@ -94,7 +116,7 @@ class GameWebSocketServer(port: Int) : WebSocketServer(InetSocketAddress(port)) 
             }
             val event = RoomStateEvent(allPlayers.map {
                 it.player
-            }  , tablesCards = tablesCards , tableBase = tableBase, round = roundCounter)
+            }  , tablesCards = tablesCards , tableBase = baseTable, round = roundCounter)
 
             val json = Json.encodeToString(Event.serializer(), event)
             players.keys.forEach { conn ->
@@ -109,7 +131,7 @@ class GameWebSocketServer(port: Int) : WebSocketServer(InetSocketAddress(port)) 
     }
 
     override fun onStart() {
-
+onStarted?.invoke()
         println("🚀 WebSocket server started on port $port")
     }
 }

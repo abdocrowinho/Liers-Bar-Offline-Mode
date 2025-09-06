@@ -9,9 +9,10 @@ import javax.inject.Inject
 class StartRoomUseCase @Inject constructor(
      private val lanGamePLay: LanGamePLay
 ) {
- suspend fun invoke (player : String){
+ suspend fun invoke (player : String,port:String){
       val room = RoomEntity(roomId = (100..2000).random()
-           .toString(), hostName = player , list = emptyList() , ipHost = getMyIpAddress()
+           .toString(), hostName = player , list = emptyList() , ipHost = getMyIpAddress(),
+          port = port
       )
       lanGamePLay.createRoom(room)
  }

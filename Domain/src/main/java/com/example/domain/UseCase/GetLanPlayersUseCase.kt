@@ -8,7 +8,7 @@ import javax.inject.Inject
 class GetLanPlayersUseCase @Inject constructor(
     private val lanGamePLay: LanGamePLay
 ) {
-    fun invoke() : MutableStateFlow<List<LanUserEntity?>?>{
+    fun invoke() : MutableStateFlow<MutableList<LanUserEntity?>?>{
      return lanGamePLay.getLanPlayers()
     }
 }

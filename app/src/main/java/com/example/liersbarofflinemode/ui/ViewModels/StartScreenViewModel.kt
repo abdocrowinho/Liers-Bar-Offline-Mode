@@ -6,7 +6,9 @@ import com.example.data.DataSource.localeDataSource.LanServeis.GameWebSocketServ
 import com.example.domain.Entitys.LanUserEntity
 import com.example.domain.GameEvents.JoinToGameEvent
 import com.example.domain.UseCase.ConnectToRoomUseCase
+import com.example.domain.UseCase.GetConnectionStatusUseCase
 import com.example.domain.UseCase.GetRoomUseCase
+import com.example.domain.UseCase.JoinGameUseCase
 import com.example.domain.UseCase.SendEventUseCase
 import com.example.domain.UseCase.StartRoomUseCase
 import com.example.domain.Utlites.UiResult
@@ -28,6 +30,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.net.ServerSocket
 import javax.inject.Inject
 
 @HiltViewModel
@@ -35,19 +38,26 @@ class StartScreenViewModel @Inject constructor(
     private val createRoomUseCase: StartRoomUseCase,
     private val getRoomUseCase: GetRoomUseCase,
     private val connectToRoomUseCase: ConnectToRoomUseCase,
-    private val sendEventUseCase: SendEventUseCase
+    private val sendEventUseCase: SendEventUseCase,
+    private val getConnectionStatusUseCase: GetConnectionStatusUseCase
+    ,private val joinGameUseCase: JoinGameUseCase
 
 
 ) : ViewModel() {
 
-private val _userName = MutableStateFlow<String>("")
+private val _userName = MutableStateFlow("")
+
     private var _navigationState = MutableStateFlow<NavigationState?>(null)
     val navigationState: StateFlow<NavigationState?> get() = _navigationState
 
     private var _uiState = MutableStateFlow(StartScreenState())
     val uiState: StateFlow<StartScreenState> get() = _uiState
 
+    val _connectionStatus = MutableStateFlow(false)
+    private val intent = MutableStateFlow<StartScreenIntent?>(null)
 
+    val serverSocket = ServerSocket(0)
+    val chosenPort = serverSocket.localPort
     fun handleIntent(intent: StartScreenIntent, name: String) {
         viewModelScope.launch(Dispatchers.IO) {
             when (intent) {
@@ -56,35 +66,30 @@ private val _userName = MutableStateFlow<String>("")
                 StartScreenIntent.OnBoxClick -> _uiState.value = HideLanDialog
 
                 is StartScreenIntent.CreateRoom -> {
+
                     _userName.value = name
+                    val gameWebSocketServer = GameWebSocketServer(chosenPort)
+                    gameWebSocketServer.setOnStartedListener {
+                        println("Server started successfully")
 
-                    val gameWebSocketServer = GameWebSocketServer(8080)
+                        viewModelScope.launch {
+                            createRoomUseCase.invoke(player = _userName.value,chosenPort.toString())
+                            connectToRoomUseCase.invoke(getMyIpAddress(), port = chosenPort.toString())
+                           joinGameUseCase.invoke(_userName.value)
+                            handleConnectionStatus()
+                        }
+                    }
                     gameWebSocketServer.start()
-                    createRoomUseCase.invoke(name)
-                    connectToRoomUseCase.invoke(getMyIpAddress() , onSuccess = {
-                        sendPlayer()
-                    } , onError = { error->
-                        _navigationState.value = NavigationState.ShowError(error)
-                        _uiState.value = Error(error)
-
-
-                    })
-
+                    serverSocket.close()
 
                 }
+
     is StartScreenIntent.Join -> {
         viewModelScope.launch (Dispatchers.IO){
              val ipHost = (_uiState.value as Success).date.ipHost
 
-
-            connectToRoomUseCase.invoke(ipHost, onSuccess = {
-                sendPlayer()
-            }, onError = {error->
-                _navigationState.value = NavigationState.ShowError(error)
-                _uiState.value = Error(error)
-
-
-            })
+            connectToRoomUseCase.invoke(ipHost,chosenPort.toString())
+            handleConnectionStatus()
 
         }
             }
@@ -129,14 +134,39 @@ private val _userName = MutableStateFlow<String>("")
 
     }
 
-private fun sendPlayer(){
+
+
+    private fun sendPlayer(){
+
     val event = JoinToGameEvent( LanUserEntity(
         name = _userName.value , id = 0 , image = "https://robohash.org/${_userName.value}", numOfShot = (1..6).random(), remainingBullets = 6,
         isAlive = true , ipAddress = getMyIpAddress() ,cards = mutableListOf()  )
     )
     sendEventUseCase.invoke(event)
 
-    _navigationState.value = NavigationState.GoingToGame
 }
 
+ private fun handleConnectionStatus() {
+     viewModelScope.launch {
+         getConnectionStatusUseCase.invoke().collect { status ->
+             _connectionStatus.value = status
+
+             when (status) {
+                 true -> {
+                     sendPlayer()
+                     _navigationState.value = NavigationState.GoingToGame
+                 }
+
+                 false -> {
+                     _uiState.value = Loading
+                     viewModelScope.launch {
+                         delay(500)
+
+                         connectToRoomUseCase.invoke(getMyIpAddress(), port = chosenPort.toString())
+                     }
+                 }
+             }
+         }
+     }
+ }
 }

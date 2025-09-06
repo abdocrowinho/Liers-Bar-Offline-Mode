@@ -8,4 +8,6 @@ sealed class EventsLanGamePlayIntent {
                                 val playerId :Int,
         ):EventsLanGamePlayIntent()
     data class CallLiarButton(val playerId: Int):EventsLanGamePlayIntent()
+    data object Warning:EventsLanGamePlayIntent()
+
 }

@@ -8,7 +8,9 @@ import com.example.domain.Entitys.Card
 import com.example.domain.Entitys.LanUserEntity
 import com.example.domain.GameEvents.CardPlayEvent
 import com.example.domain.GameEvents.Event
+import com.example.domain.GameEvents.LiarCallEvent
 import com.example.domain.GameEvents.StartRoundEvent
+import com.example.domain.GameEvents.WarningEvent
 import com.example.domain.UseCase.GetLanPlayersUseCase
 import com.example.domain.UseCase.GetMessageEventUseCase
 import com.example.domain.UseCase.SendEventUseCase
@@ -81,21 +83,30 @@ private var _eventMessage = MutableSharedFlow<Event?>()
     }
     fun handleEvents(eventIntent : EventsLanGamePlayIntent){
         when(eventIntent){
-            is EventsLanGamePlayIntent.CallLiarButton -> TODO()
+            is EventsLanGamePlayIntent.CallLiarButton -> {
+            }
             EventsLanGamePlayIntent.DealCards -> {
+
                 sendEventUseCase.invoke(StartRoundEvent)
+
             }
             is EventsLanGamePlayIntent.ThrowCardsButton -> {
                 val nextPlayer = if (eventIntent.playerId==4) 1 else{eventIntent.playerId.plus(1)}
-                sendEventUseCase.invoke(
-                    CardPlayEvent(eventIntent.playerId,
+                val cardPlayEvent=  CardPlayEvent(eventIntent.playerId,
                     card = _readyCard.value,
                     nextPlayer = nextPlayer ,
                     index = _readyCard.value.size
-                    )
+                )
+                Log.d("client-> CardPlayEvent = " , cardPlayEvent.toString())
+                sendEventUseCase.invoke(
+                  cardPlayEvent
                 )
                 _readyCard.value = mutableListOf()
 
+            }
+
+            EventsLanGamePlayIntent.Warning -> {
+                sendEventUseCase.invoke(WarningEvent)
             }
         }
     }
