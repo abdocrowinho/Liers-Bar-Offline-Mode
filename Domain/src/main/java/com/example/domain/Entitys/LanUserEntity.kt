@@ -11,5 +11,6 @@ data class LanUserEntity(
     val isAlive: Boolean ,
     val numOfShot: Int ,
     val remainingBullets: Int,
-    val  cards :List<Card>
+    val  cards :List<Card>,
+    val isHost:Boolean
 )

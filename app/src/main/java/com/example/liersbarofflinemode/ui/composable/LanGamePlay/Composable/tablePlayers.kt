@@ -123,7 +123,11 @@ fun TablePlayers(lanGamePlayViewModel: LanGamePlayViewModel) {
         }
         return rs
     }
-
+    LaunchedEffect(playersState) {
+        println("🎮 Players in UI: ${playersState?.size}")
+        println("🎮 All players: ${allPlayers.map { it.name }}")
+    }
+    println("🎯 Active player: ${activePlayer?.name ?: "NULL"}")
     activePlayer?.let { me ->
 
         val myIndex = ids.indexOf(me.id)
@@ -157,7 +161,7 @@ fun TablePlayers(lanGamePlayViewModel: LanGamePlayViewModel) {
 
             PlayerCards(
                 modifier = Modifier.align(Alignment.BottomCenter),
-                lanGamePlayViewModel = lanGamePlayViewModel, activePlayer = activePlayer
+                lanGamePlayViewModel = lanGamePlayViewModel, activePlayer = me
             )
 
             if (isFindCardsInTable) {
@@ -302,7 +306,6 @@ fun TablePlayers(lanGamePlayViewModel: LanGamePlayViewModel) {
             if (event is WarningEvent){
                 isWarning = true
 
-                // قفل أي صوت شغال قبل
                 mediaPlayer?.let {
                     if (it.isPlaying) {
                         it.stop()
@@ -315,7 +318,6 @@ fun TablePlayers(lanGamePlayViewModel: LanGamePlayViewModel) {
                     start()
                 }
 
-                // Coroutine مستقلة عشان ما توقفش الـ collect
                 launch {
                     delay(3000)
                     mediaPlayer?.let {

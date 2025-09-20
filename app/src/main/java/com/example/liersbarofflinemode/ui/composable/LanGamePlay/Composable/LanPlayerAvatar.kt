@@ -96,5 +96,5 @@ fun LanPlayerAvatar(rotate: Float, playerState: LanUserEntity,modifier: Modifier
 fun PlayerAvatarPreview() {
     LanPlayerAvatar(playerState = LanUserEntity(1, getMyIpAddress(),"",
          isAlive = true, remainingBullets =  6,
-      numOfShot =   5, image = "" ,  cards =  emptyList()) , rotate = 0f, modifier = Modifier, size = 70.dp)
+      numOfShot =   5, image = "" ,  cards =  emptyList(), isHost = true) , rotate = 0f, modifier = Modifier, size = 70.dp)
 }

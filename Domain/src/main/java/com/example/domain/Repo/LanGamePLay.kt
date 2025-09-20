@@ -17,7 +17,7 @@ interface LanGamePLay {
     fun isWebSocketOpen():Flow<Boolean>
     fun getRoom(): Flow<UiResult< RoomEntity?>>
     fun sendEvent(event: Event)
-    fun getLanPlayers():MutableStateFlow<MutableList<LanUserEntity?>?>
+   suspend fun getLanPlayers():Flow<List<LanUserEntity>>
    suspend fun getMessage():SharedFlow<Event?>
 
 }

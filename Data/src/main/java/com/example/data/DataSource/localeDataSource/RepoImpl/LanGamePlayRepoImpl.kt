@@ -6,6 +6,7 @@ import android.util.Log
 import com.example.data.DataSource.localeDataSource.LanServeis.GamePlayLanWebSocketFactory
 import com.example.data.DataSource.localeDataSource.LanServeis.GamePlayWepSocketFactoryImpl
 import com.example.data.DataSource.localeDataSource.LanServeis.GameWebSocketClient
+import com.example.data.DataSource.localeDataSource.LanServeis.WebSocketServerManger
 import com.example.data.DataSource.localeDataSource.UDPs.UDPBroadcaster
 import com.example.domain.Entitys.LanUserEntity
 import com.example.domain.Entitys.RoomEntity
@@ -16,6 +17,7 @@ import com.example.domain.Repo.LanGamePLay
 import com.example.domain.Utlites.UiResult
 import com.example.domain.Utlites.getMyIpAddress
 import dagger.hilt.android.qualifiers.ApplicationContext
+import io.ktor.utils.io.concurrent.shared
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -30,34 +32,37 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.net.URI
 import javax.inject.Inject
 import javax.inject.Scope
 
-@Suppress("UNREACHABLE_CODE")
 class LanGamePlayRepoImpl @Inject constructor(
-  private  val gamePlayLanWebSocketFactory: GamePlayLanWebSocketFactory,
+    private val gamePlayLanWebSocketFactory: GamePlayLanWebSocketFactory,
 
     @ApplicationContext val context: Context
 ) : LanGamePLay {
     private lateinit var webSocketClient: GameWebSocketClient
 
-private val _isWepSocketOpen = MutableStateFlow(false)
-    override fun isWebSocketOpen(): Flow<Boolean> =_isWepSocketOpen
+    private val _isWepSocketOpen = MutableStateFlow(false)
+    override fun isWebSocketOpen(): Flow<Boolean> = _isWepSocketOpen
+
+
     override suspend fun createRoom(room: RoomEntity) {
         UDPBroadcaster.startBroadcasting(room)
 
     }
-  override suspend fun connectToGameServer(serverIp: String,port:String ) {
+
+    override suspend fun connectToGameServer(serverIp: String, port: String) {
         val uri = URI("ws://$serverIp:$port/game")
         webSocketClient = gamePlayLanWebSocketFactory.create(
-             uri, onSuccess = {
-                 _isWepSocketOpen.value = true
+            uri, onSuccess = {
+                _isWepSocketOpen.value = true
 
             }, onErrorAction = {
-                _isWepSocketOpen.value=false
+                _isWepSocketOpen.value = false
             })
         webSocketClient.connect()
     }
@@ -70,12 +75,12 @@ private val _isWepSocketOpen = MutableStateFlow(false)
             isAlive = true,
             image = "https://robohash.org/${playerName}?set=set5",
             id = 0,
-            ipAddress = "",
-            cards = mutableListOf()
+            ipAddress = getMyIpAddress(),
+            cards = mutableListOf(),
+            isHost = false
         )
         webSocketClient.sendGameEvent(event = JoinToGameEvent(newUser))
     }
-
 
 
     override fun getRoom(): Flow<UiResult<RoomEntity>> = callbackFlow {
@@ -99,22 +104,30 @@ private val _isWepSocketOpen = MutableStateFlow(false)
     }.flowOn(Dispatchers.IO)
 
     override fun sendEvent(event: Event) {
-        webSocketClient.sendGameEvent(event)
+        if (::webSocketClient.isInitialized)
+            webSocketClient.sendGameEvent(event)
     }
 
-    override fun getLanPlayers(): MutableStateFlow<MutableList<LanUserEntity?>?> {
-      return  webSocketClient.playersInRoom
+    override suspend fun getLanPlayers(): Flow<List<LanUserEntity>> {
+        return WebSocketServerManger.getServer()?.players!!.map {
+            it.values.toList()
+        }
+
     }
 
-    override suspend fun getMessage():SharedFlow<Event?> {
-        return webSocketClient.messageEvent.also {
-            flow->
-            CoroutineScope(Dispatchers.IO).launch {
-                flow.collect{event->
-                    Log.d("REPO", "received event in repo -> $event")
+    override suspend fun getMessage(): SharedFlow<Event?> {
+        return if (::webSocketClient.isInitialized) {
+            webSocketClient.messageEvent.also { flow ->
+                CoroutineScope(Dispatchers.IO).launch {
+                    flow.collect { event ->
+                        Log.d("REPO", "received event in repo -> $event")
+                    }
                 }
             }
+        } else {
+            MutableSharedFlow(replay = 0, extraBufferCapacity = 0)
         }
+
     }
 
 }

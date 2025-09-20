@@ -20,56 +20,64 @@ class ServerHandler(
         when (event) {
 
             is JoinToGameEvent -> {
-                server.idCounter = server.idCounter.plus(1)
-                if (server.players.size != 4) {
+           server.idCounter.value = server.idCounter.value.apply{
+               server.idCounter.value.plus(1)
+           }
+                if (server.players.value .size != 4) {
                     val playerEvent = event.player
-                    val playerWithUId = playerEvent.copy(id = server.idCounter)
-                    server.players[conn] = playerWithUId
+                    val playerWithUId = playerEvent.copy(id = server.idCounter.value)
+
+               server.players.value= server.players.value.toMutableMap().apply {
+                       put(conn,playerWithUId)
+                    }
                     broadcast(
                         RoomStateEvent(
-                            server.players.values.toMutableList(),
+                            server.players.value.values.toMutableList(),
                             tableBase = null,
-                            tablesCards = server.tablesCards,
-                            round = 1
+                            tablesCards = server.tablesCards.value,
+                            round = server.roundCounter.value
                         )
                     )
                 }
-
             }
 
             is CardPlayEvent -> {
-                val oldPlayer = server.players[conn]
-                val oldCards = server.players[conn]?.cards
+                val oldPlayer = server.players.value[conn]
+                val oldCards = server.players.value[conn]?.cards
 
                 val remainingCards = oldCards?.filterNot { it in event.card }
 
                 val updatedPlayer = remainingCards?.toMutableList()
                     ?.let { oldPlayer?.copy(cards = it) }
-                updatedPlayer?.let {
-                    server.players[conn] = it
+
+                updatedPlayer?.let { _updatedPlayer->
+             server.players.value=  server.players.value.toMutableMap().apply {
+                        put(conn,_updatedPlayer)
+                    }
                 }
-                server.tablesCards.addAll(event.card)
+              server.tablesCards.value =
+                  server.tablesCards.value.apply {
+                      addAll(event.card)
+                  }
 
                 broadcast(CardPlayEvent(event.playerId, event.card, event.index,event.nextPlayer))
 
                 broadcast(
                     RoomStateEvent(
-                     playersInRoom = server.players.values.toMutableList(),
-                        round = 0,
-                        tablesCards = server.tablesCards,
-                        tableBase = server.baseTable
+                     playersInRoom = server.players.value.values.toMutableList(),
+                        round = server.roundCounter.value,
+                        tablesCards = server.tablesCards.value,
+                        tableBase = server.baseTable.value
                     ),
                 )
-
-
             }
 
             is LiarCallEvent -> {}
             is PlayerShotEvent -> {}
             is StartRoundEvent -> {
                     dealCards()
-                    broadcast(RoomStateEvent(server.players.values.toMutableList(),
-                        server.roundCounter,server.tablesCards,server.baseTable))
+                    broadcast(RoomStateEvent(server.players.value.values.toMutableList(),
+                        server.roundCounter.value,server.tablesCards.value,server.baseTable.value))
                 }
 
 
