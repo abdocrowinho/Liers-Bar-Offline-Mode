@@ -31,6 +31,7 @@ import com.example.liersbarofflinemode.ui.States.ShowLanDialog
 import com.example.liersbarofflinemode.ui.States.Success
 import com.example.liersbarofflinemode.ui.ViewModels.StartScreenViewModel
 import com.example.liersbarofflinemode.ui.composable.startScreen.Composable.ActionsInMainActivity
+import com.example.liersbarofflinemode.ui.composable.startScreen.Composable.CustomLoadingIndicator
 import com.example.liersbarofflinemode.ui.composable.startScreen.Composable.RoomsDialog
 import com.example.liersbarofflinemode.ui.composable.startScreen.Composable.ShowLanDialog
 import com.example.liersbarofflinemode.ui.theme.mainActivity.ui.Bases.NavigationItem
@@ -71,6 +72,9 @@ fun MyApp(
                 }
 
                 null -> {}
+                NavigationState.Loading -> {
+
+                }
             }
 
 

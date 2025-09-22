@@ -1,14 +1,16 @@
 package com.example.liersbarofflinemode.ui.ViewModels
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.DataSource.localeDataSource.LanServeis.GameWebSocketServer
+import com.example.data.DataSource.localeDataSource.LanServeis.WebSocketServerManger
 import com.example.domain.Entitys.LanUserEntity
 import com.example.domain.Entitys.RoomEntity
-import com.example.domain.GameEvents.Event
+import com.example.domain.GameEvents.JoinToGameEvent
 import com.example.domain.UseCase.ConnectToRoomUseCase
+import com.example.domain.UseCase.GetConnectionStatusUseCase
 import com.example.domain.UseCase.GetRoomUseCase
+import com.example.domain.UseCase.JoinGameUseCase
 import com.example.domain.UseCase.SendEventUseCase
 import com.example.domain.UseCase.StartRoomUseCase
 import com.example.domain.Utlites.UiResult
@@ -28,9 +30,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.internal.ws.WebSocketProtocol
+import java.net.ServerSocket
 import javax.inject.Inject
 
 @HiltViewModel
@@ -38,67 +41,77 @@ class StartScreenViewModel @Inject constructor(
     private val createRoomUseCase: StartRoomUseCase,
     private val getRoomUseCase: GetRoomUseCase,
     private val connectToRoomUseCase: ConnectToRoomUseCase,
-    private val sendEventUseCase: SendEventUseCase
-
-
+    private val sendEventUseCase: SendEventUseCase,
+    private val getConnectionStatusUseCase: GetConnectionStatusUseCase,
+    private val joinGameUseCase: JoinGameUseCase
 ) : ViewModel() {
 
-private val _userName = MutableStateFlow<String>("")
+    private val _userName = MutableStateFlow("")
     private var _navigationState = MutableStateFlow<NavigationState?>(null)
     val navigationState: StateFlow<NavigationState?> get() = _navigationState
 
     private var _uiState = MutableStateFlow(StartScreenState())
     val uiState: StateFlow<StartScreenState> get() = _uiState
 
+    val _connectionStatus = MutableStateFlow(false)
+
+    val roomData = MutableStateFlow<RoomEntity>(RoomEntity(roomId = "", port = "",
+        hostName = "", ipHost = "", list = listOf()
+    ))
+
+    private var gameWebSocketServer: GameWebSocketServer? = null
+    private var chosenPort: Int = 0
 
     fun handleIntent(intent: StartScreenIntent, name: String) {
         viewModelScope.launch(Dispatchers.IO) {
             when (intent) {
-                StartScreenIntent.LanButton -> _uiState.value = ShowLanDialog
+                StartScreenIntent.LanButton -> {
+                    _uiState.value = ShowLanDialog
+                }
 
-                StartScreenIntent.OnBoxClick -> _uiState.value = HideLanDialog
+                StartScreenIntent.OnBoxClick -> {
+                    _uiState.value = HideLanDialog
+                }
 
                 is StartScreenIntent.CreateRoom -> {
                     _userName.value = name
 
-                    val gameWebSocketServer = GameWebSocketServer(8080)
-                    gameWebSocketServer.start()
-                    createRoomUseCase.invoke(name)
-                    delay(2000)
-                    connectToRoomUseCase.invoke(getMyIpAddress() , onSuccess = {
-                        sendPlayer()
-                    } , onError = { error->
-                        _navigationState.value = NavigationState.ShowError(error)
-                        _uiState.value = Error(error)
+                    ServerSocket(0).use { serverSocket ->
+                        chosenPort = serverSocket.localPort
 
+                        gameWebSocketServer = WebSocketServerManger.createServer(chosenPort)
 
-                    })
+                        gameWebSocketServer?.start()
 
+                        viewModelScope.launch(Dispatchers.IO) {
+                            delay(2000)
+                            createRoomUseCase.invoke(player = _userName.value, chosenPort.toString())
 
+                            gameWebSocketServer!!.addHostPlayer(_userName.value)
+                            gameWebSocketServer?.printPlayers()
+
+                            withContext(Dispatchers.Main) {
+                                _navigationState.value = NavigationState.GoingToGame
+                            }
+                        }
+                    }
                 }
-    is StartScreenIntent.Join -> {
-        viewModelScope.launch (Dispatchers.IO){
-             val ipHost = (_uiState.value as Success).date.ipHost
 
+                is StartScreenIntent.Join -> {
 
-            connectToRoomUseCase.invoke(ipHost, onSuccess = {
-                sendPlayer()
-            }, onError = {error->
-                _navigationState.value = NavigationState.ShowError(error)
-                _uiState.value = Error(error)
+                                launch(Dispatchers.IO) {
+                                    connectToRoomUseCase.invoke( roomData.value.ipHost,
+                                        roomData.value.port)
 
+                                    handleConnectionStatus()
+                                }
+                }
 
-            })
-
-        }
-            }
                 is StartScreenIntent.GoingRoom -> {
-
-                    viewModelScope.launch(Dispatchers.IO) {
+                    launch(Dispatchers.IO) {
                         getRoomUseCase.invoke(name).collect { result ->
                             withContext(Dispatchers.Main) {
                                 when (result) {
-
                                     is UiResult.Error -> {
                                         _uiState.value = Error(result.error)
                                     }
@@ -110,39 +123,70 @@ private val _userName = MutableStateFlow<String>("")
                                     is UiResult.Success -> {
                                         _uiState.value = Success(result.data!!)
                                         _userName.value = name
-
+                                        roomData.value = result.data!!
                                     }
 
                                     UiResult.TimeOut -> {
-                                        _uiState.value =
-                                            Timeout("Still no rooms available. Please check back soon!")
+                                        _uiState.value = Timeout("Still no rooms available. Please check back soon!")
                                     }
                                 }
-
                             }
-
-
                         }
-
                     }
                 }
 
-                is StartScreenIntent.Back -> _uiState.value = HideRooms
+                is StartScreenIntent.Back -> {
+                    _uiState.value = HideRooms
+                }
             }
         }
-
     }
 
-private fun sendPlayer(){
-    val event = Event.JoinedGameEvent( LanUserEntity(
-        name = _userName.value , id = 0 , image = "https://robohash.org/${_userName.value}", numOfShot = (1..6).random(), remainingBullets = 6,
-        isAlive = true , ipAddress = getMyIpAddress() ,cards = mutableListOf()  )
-    )
-    sendEventUseCase.invoke(event)
+    private fun sendPlayer() {
+        viewModelScope.launch {
+            joinGameUseCase.invoke(_userName.value)
+        }
+    }
 
-    _navigationState.value = NavigationState.GoingToGame
+    private fun handleConnectionStatus() {
+        viewModelScope.launch {
+            getConnectionStatusUseCase.invoke().collect { status ->
+                _connectionStatus.value = status
 
 
+                when (status) {
+                    true -> {
+                        sendPlayer()
+                        _navigationState.value = NavigationState.GoingToGame
+                    }
 
-}
+                    false -> {
+                        _uiState.value = Loading
+
+                        var retryCount = 0
+                        val maxRetries = 5
+
+                        while (retryCount < maxRetries && !_connectionStatus.value) {
+                            delay(1000 * (retryCount + 1).toLong())
+
+                            if (!_connectionStatus.value) {
+                                connectToRoomUseCase.invoke(roomData.value.ipHost,
+                                    port = roomData.value.port)
+                                retryCount++
+                            }
+                        }
+
+                        if (retryCount >= maxRetries && !_connectionStatus.value) {
+                            _uiState.value = Error("Failed to establish connection after $maxRetries attempts")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        gameWebSocketServer?.stop()
+    }
 }

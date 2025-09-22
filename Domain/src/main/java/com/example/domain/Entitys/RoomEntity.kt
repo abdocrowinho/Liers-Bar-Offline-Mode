@@ -8,5 +8,6 @@ data class RoomEntity(
     val roomId : String ,
     val list: List<LanUserEntity>,
     val hostName : String,
-    val ipHost:String
+    val ipHost:String,
+    val port : String
 )

@@ -6,6 +6,7 @@ import com.example.domain.GameEvents.JoinToGameEvent
 import com.example.domain.GameEvents.LiarCallEvent
 import com.example.domain.GameEvents.PlayerShotEvent
 import com.example.domain.GameEvents.RoomStateEvent
+import com.example.domain.GameEvents.WarningEvent
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
@@ -27,7 +28,7 @@ object JsonHelper {
                     subclass(CardPlayEvent::class,CardPlayEvent.serializer())
                     subclass(LiarCallEvent::class,LiarCallEvent.serializer())
                     subclass(PlayerShotEvent::class,PlayerShotEvent.serializer())
-
+                    subclass(WarningEvent::class,WarningEvent.serializer())
                 }
             }
         }
