@@ -1,15 +1,13 @@
 package com.example.domain.GameEvents
 
 import com.example.domain.Entitys.Card
+import com.example.domain.Entitys.Rank
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 @SerialName("LiarCallEvent")
 data class LiarCallEvent(
-    val  cardPlayEvent: CardPlayEvent,
-    val cardTable : Card,
-    val callerId: String,
-    val accusedId: String,
-    val loserId: String
+    val callerId: Int,
+
 ):Event()
