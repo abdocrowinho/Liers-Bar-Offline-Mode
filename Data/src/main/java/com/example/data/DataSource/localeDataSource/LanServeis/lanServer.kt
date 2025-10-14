@@ -1,16 +1,20 @@
  package com.example.data.DataSource.localeDataSource.LanServeis
 import android.util.Log
+import com.example.data.DataSource.Utltity.FunctionHelper
 import com.example.domain.Entitys.Card
 import com.example.domain.Entitys.LanUserEntity
 import com.example.domain.Entitys.Rank
 import com.example.domain.GameEvents.CardPlayEvent
 import com.example.domain.GameEvents.Event
 import com.example.domain.GameEvents.JoinToGameEvent
+import com.example.domain.GameEvents.LiarCallEvent
+import com.example.domain.GameEvents.LiarCallResult
 import com.example.domain.GameEvents.RoomStateEvent
-import com.example.domain.GameEvents.StartRoundEvent
+import com.example.domain.GameEvents.WarningEvent
 import com.example.domain.Utlites.Constant.listOfCard
 import com.example.domain.Utlites.getMyIpAddress
 import createFakeConnection
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,20 +25,21 @@ import org.java_websocket.server.WebSocketServer
 import java.net.InetSocketAddress
 
  class GameWebSocketServer(port: Int) : WebSocketServer(InetSocketAddress(port)) {
-     private var roundStarted = false
+      var roundStarted =  MutableStateFlow(false)
      private val clients = mutableSetOf<WebSocket>()
-     val players =MutableStateFlow< MutableMap<WebSocket?, LanUserEntity>>(mutableMapOf())
+     val players =MutableStateFlow< MutableMap<WebSocket?, LanUserEntity?>>(mutableMapOf())
 
    private  val _serverEventState = MutableStateFlow<Event?>(null)
      val serverEventState: StateFlow<Event?> = _serverEventState.asStateFlow()
 
      val idCounter = MutableStateFlow(1)
-     val  roundCounter = MutableStateFlow(1)
+     val  roundCounter = MutableStateFlow(0)
      val  tablesCards= MutableStateFlow< MutableList<Card>>(mutableListOf())
      val baseTable= MutableStateFlow<Card?>(null)
      private var listOfCards = mutableListOf(Card(rank = Rank.ACE, imageCard = 0, "", 1))
      private var serverHandler: ServerHandler? = null
      private var onStarted: (() -> Unit)? = null
+     var cardsUnderTest = MutableStateFlow<MutableList<Card>>(mutableListOf())
 
      fun setOnStartedListener(listener: () -> Unit) {
          onStarted = listener
@@ -48,7 +53,6 @@ import java.net.InetSocketAddress
                  broadcastEvent(event)
              },
              dealCards = {
-                 dealCards()
              }
          )
      }
@@ -89,14 +93,72 @@ import java.net.InetSocketAddress
          onStarted?.invoke()
          println("step WebSocket server started on port $port")
      }
+     private val hostConn =  players.value.keys.filterNot { it in clients }.firstOrNull()
+     private val hostPlayer = players.value[hostConn]
 
 
+fun hostLiarCallProcess(){
+     val hasWrongCard = cardsUnderTest.value.any { it.rank != baseTable.value!!.rank&&it.rank!=Rank.Joker }
+     val loserId = if (hasWrongCard) {
+        FunctionHelper.afterPlayer(players, hostPlayer?.id ?: 1)
+    } else {
+        hostPlayer?.id ?: 1
+    }
+     val loser = players.value.values.find { it?.id == loserId }
+    val isRealBullet = (loser?.remainingBullets == loser?.numOfShot)
 
+    broadcastEvent(
+        LiarCallResult(
+            loserId = loserId,
+            isRealBullet = isRealBullet,
+            cardsRank = cardsUnderTest.value
+        )
+    )
+     cardsUnderTest.value =  mutableListOf()
+}
+
+     fun hostLiarCall() {
+         broadcastEvent(LiarCallEvent(callerId = hostPlayer?.id ?: 1))
+         roundStarted.value=false
+
+     }
+
+     fun updateLooserPlayer(isRealBullet:Boolean,){
+         Log.d("loser player updating in server", "")
+          val hasWrongCard = cardsUnderTest.value.any { it.rank != baseTable.value!!.rank }
+          val loserId = if (hasWrongCard) {
+             FunctionHelper.afterPlayer(players, hostPlayer?.id ?: 1)
+         } else {
+             hostPlayer?.id ?: 1
+         }
+          val loser = players.value.values.find { it?.id == loserId }
+          val loserConn = players.value.keys.find { players.value[it]?.id == loserId }
+         val updateLoserPlayer: LanUserEntity? = if (isRealBullet) {
+             loser?.copy(remainingBullets = 0, isAlive = false)
+         } else {
+             loser?.copy(remainingBullets = loser.remainingBullets.minus(1))
+         }
+         Log.d("loser player updating in server", updateLoserPlayer?.remainingBullets.toString())
+
+         players.value = players.value.apply {
+             put(loserConn, updateLoserPlayer)
+         }
+     }
+
+fun hostPlayerWarning(){
+    val event = WarningEvent
+    broadcastEvent(event)
+}
 
      fun hostPlayCard(listOfCard:List<Card>){
+          val hostConn =  players.value.keys.filterNot { it in clients }.firstOrNull()
+          val hostPlayer = players.value[hostConn]
+
          // update cards in host hand
-        val hostConn =  players.value.keys.filterNot { it in clients }.firstOrNull()
-         val hostPlayer = players.value[hostConn]
+         cardsUnderTest.value = cardsUnderTest.value.apply {
+        addAll( mutableListOf())
+         }
+
 
          println("get host player debug : ${hostPlayer?.name}")
 
@@ -127,18 +189,29 @@ import java.net.InetSocketAddress
          broadcastEvent(
              RoomStateEvent(
                  playersInRoom = players.value.values.toMutableList(),
-                 round = 0,
+                 round = roundCounter.value,
                  tablesCards = tablesCards.value,
                  tableBase =baseTable.value
              ),
              )
+         cardsUnderTest.value = cardsUnderTest.value.apply {
+            addAll(listOfCard.toMutableList())
+         }
+     }
 
+       fun startNewRound(){
+          if (players.value.values.size==1||players.value.isNotEmpty()){
+   Log.d("players when new round called",players.value.values.size.toString())
+
+              dealCards()
+             Log.d("Start New Round: ", "Round Started successfully ")
+         }
      }
 
 
      private fun dealCards() {
-         if (roundStarted) return
-         roundStarted = true
+        if (roundStarted.value) return
+         roundStarted.value = true
          if (players.value.isNotEmpty()) {
              this.listOfCards = this.listOfCards.shuffled().toMutableList()
 
@@ -151,24 +224,29 @@ import java.net.InetSocketAddress
 
                  if (player != null) {
                      val updatePlayer = player.copy(cards = hand)
-             players.value =    players.value.toMutableMap().apply {
+             players.value = players.value.toMutableMap().apply {
                      put(conn,updatePlayer)
                  }
                  }
 
              }
-             baseTable.value= listOfCards.random()
+             baseTable.value = listOfCards.filter {
+                 it.rank!=Rank.Joker
+             }.random()
 
              //send to clients new event
 
              val allPlayers = players.value.values.map {
-                 JoinToGameEvent(it)
+                 it?.let { it1 -> JoinToGameEvent(it1) }
              }
-             val event = RoomStateEvent(allPlayers.map {
-                 it.player
+             roundCounter.value += 1
 
-             }, tablesCards = tablesCards.value,
-                 tableBase = baseTable.value, round = roundCounter.value)
+             val event = RoomStateEvent(
+                 allPlayers.map { it?.player },
+                 tablesCards = tablesCards.value,
+                 tableBase = baseTable.value,
+                 round = roundCounter.value
+             )
 
              broadcastEvent(event)
 
@@ -179,7 +257,7 @@ import java.net.InetSocketAddress
          }
      }
 
-     fun addHostPlayer(playerName: String) {
+    suspend fun addHostPlayer(playerName: String) {
          val hostPlayer = LanUserEntity(
              name = playerName,
              numOfShot = (1..6).random(),
@@ -197,7 +275,7 @@ import java.net.InetSocketAddress
          }
          println("🎯 Host player added directly: $playerName")
          printPlayers()
-         dealCards()
+         delay(2000)
      }
 
      private fun<T:Event>broadcastEvent(event: T) {
@@ -210,14 +288,14 @@ import java.net.InetSocketAddress
                  println("❌ Failed to send to ${client.remoteSocketAddress}: ${e.message}")
              }
          }
-         _serverEventState.value = event
+         _serverEventState.tryEmit(event)
      }
 
 
      fun printPlayers() {
          println("📋 Current players in server:")
          players.value.forEach { (conn, player) ->
-             println("   - ${player.name} (Connection: ${conn?.hashCode()})")
+             println(" ay 7aga  - ${player?.name} (Connection: ${conn?.hashCode()})")
          }
          println("📊 Total: ${players.value.size} players")
      }

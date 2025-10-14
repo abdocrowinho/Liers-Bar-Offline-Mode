@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 @SerialName("RoomStateEvent")
 data class RoomStateEvent(
-    val playersInRoom:  List<LanUserEntity>,
+    val playersInRoom:  List<LanUserEntity?>,
     val round : Int ?=0,
     val tablesCards:MutableList<Card>?,
     val tableBase : Card?

@@ -4,23 +4,19 @@ import UDPListener
 import android.content.Context
 import android.util.Log
 import com.example.data.DataSource.localeDataSource.LanServeis.GamePlayLanWebSocketFactory
-import com.example.data.DataSource.localeDataSource.LanServeis.GamePlayWepSocketFactoryImpl
 import com.example.data.DataSource.localeDataSource.LanServeis.GameWebSocketClient
 import com.example.data.DataSource.localeDataSource.LanServeis.WebSocketServerManger
 import com.example.data.DataSource.localeDataSource.UDPs.UDPBroadcaster
 import com.example.domain.Entitys.LanUserEntity
 import com.example.domain.Entitys.RoomEntity
-import com.example.domain.Entitys.UserEntity
 import com.example.domain.GameEvents.Event
 import com.example.domain.GameEvents.JoinToGameEvent
 import com.example.domain.Repo.LanGamePLay
 import com.example.domain.Utlites.UiResult
 import com.example.domain.Utlites.getMyIpAddress
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.ktor.utils.io.concurrent.shared
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -28,16 +24,11 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.net.URI
 import javax.inject.Inject
-import javax.inject.Scope
 
 class LanGamePlayRepoImpl @Inject constructor(
     private val gamePlayLanWebSocketFactory: GamePlayLanWebSocketFactory,
@@ -68,6 +59,13 @@ class LanGamePlayRepoImpl @Inject constructor(
     }
 
     override suspend fun join(playerName: String) {
+        repeat(10) { attempt ->
+            if (webSocketClient.isOpen) return@repeat
+            delay(300)
+            if (attempt == 9 && !webSocketClient.isOpen) {
+                throw IllegalStateException("WebSocket connection failed to open after waiting")
+            }
+        }
         val newUser = LanUserEntity(
             name = playerName,
             numOfShot = (1..6).random(),
@@ -108,7 +106,8 @@ class LanGamePlayRepoImpl @Inject constructor(
             webSocketClient.sendGameEvent(event)
     }
 
-    override suspend fun getLanPlayers(): Flow<List<LanUserEntity>> {
+    override suspend fun getLanPlayers(): Flow<List<LanUserEntity?>> {
+        Log.d("getPlayers running", "getLanPlayers: ")
         return WebSocketServerManger.getServer()?.players!!.map {
             it.values.toList()
         }
@@ -117,17 +116,10 @@ class LanGamePlayRepoImpl @Inject constructor(
 
     override suspend fun getMessage(): SharedFlow<Event?> {
         return if (::webSocketClient.isInitialized) {
-            webSocketClient.messageEvent.also { flow ->
-                CoroutineScope(Dispatchers.IO).launch {
-                    flow.collect { event ->
-                        Log.d("REPO", "received event in repo -> $event")
-                    }
-                }
-            }
+            webSocketClient.messageEvent
         } else {
-            MutableSharedFlow(replay = 0, extraBufferCapacity = 0)
+            MutableSharedFlow(replay = 1)
         }
-
     }
 
 }

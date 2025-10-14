@@ -6,8 +6,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-@SerialName("LiarCallEvent")
-data class LiarCallEvent(
-    val callerId: Int,
-
-):Event()
+@SerialName("LiarCallResult")
+data class LiarCallResult(
+    val loserId : Int ,
+    val isRealBullet : Boolean,
+    val cardsRank : List<Card>
+) : Event()

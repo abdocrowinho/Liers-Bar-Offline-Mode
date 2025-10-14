@@ -7,10 +7,8 @@ plugins {
     id("com.google.dagger.hilt.android") version "2.52" apply false
 }
 buildscript{
-
     dependencies {
         "classpath"("com.android.tools.build:gradle:8.1.2")
         "classpath"(libs.kotlin.gradle.plugin)
     }
-
 }

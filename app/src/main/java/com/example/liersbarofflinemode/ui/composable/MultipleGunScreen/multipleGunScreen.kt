@@ -85,7 +85,6 @@ val fireCounter = viewModel.fireCounter.collectAsState()
         )
         Gun(
             modifier = Modifier.align(Alignment.Center),
-            userid = userid?:0, navController = navController,
         ){
             Log.d("gun counter", fireCounter.value.toString())
             if (fireCounter.value == 0) {
@@ -93,9 +92,7 @@ val fireCounter = viewModel.fireCounter.collectAsState()
                     navController.popBackStack()
                 }
 
-            } else {
-                return@Gun
-            }
+            } else return@Gun
         }
         AnimatedVisibility(visible =gunShotState[userid]?.bulletStateWord != null,
             enter = fadeIn(

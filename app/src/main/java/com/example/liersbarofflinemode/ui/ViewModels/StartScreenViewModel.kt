@@ -13,6 +13,8 @@ import com.example.domain.UseCase.GetRoomUseCase
 import com.example.domain.UseCase.JoinGameUseCase
 import com.example.domain.UseCase.SendEventUseCase
 import com.example.domain.UseCase.StartRoomUseCase
+import com.example.domain.Utlites.LanPlayerState
+import com.example.domain.Utlites.MangerLanPlayerState
 import com.example.domain.Utlites.UiResult
 import com.example.domain.Utlites.getMyIpAddress
 import com.example.liersbarofflinemode.ui.Intent.StartScreenIntent
@@ -55,9 +57,12 @@ class StartScreenViewModel @Inject constructor(
 
     val _connectionStatus = MutableStateFlow(false)
 
-    val roomData = MutableStateFlow<RoomEntity>(RoomEntity(roomId = "", port = "",
-        hostName = "", ipHost = "", list = listOf()
-    ))
+    val roomData = MutableStateFlow<RoomEntity>(
+        RoomEntity(
+            roomId = "", port = "",
+            hostName = "", ipHost = "", list = listOf()
+        )
+    )
 
     private var gameWebSocketServer: GameWebSocketServer? = null
     private var chosenPort: Int = 0
@@ -74,6 +79,7 @@ class StartScreenViewModel @Inject constructor(
                 }
 
                 is StartScreenIntent.CreateRoom -> {
+                    MangerLanPlayerState.setState(LanPlayerState.Host)
                     _userName.value = name
 
                     ServerSocket(0).use { serverSocket ->
@@ -84,8 +90,10 @@ class StartScreenViewModel @Inject constructor(
                         gameWebSocketServer?.start()
 
                         viewModelScope.launch(Dispatchers.IO) {
-                            delay(2000)
-                            createRoomUseCase.invoke(player = _userName.value, chosenPort.toString())
+                            createRoomUseCase.invoke(
+                                player = _userName.value,
+                                chosenPort.toString()
+                            )
 
                             gameWebSocketServer!!.addHostPlayer(_userName.value)
                             gameWebSocketServer?.printPlayers()
@@ -98,13 +106,15 @@ class StartScreenViewModel @Inject constructor(
                 }
 
                 is StartScreenIntent.Join -> {
+                    MangerLanPlayerState.setState(LanPlayerState.Client)
+                    launch(Dispatchers.IO) {
+                        connectToRoomUseCase.invoke(
+                            roomData.value.ipHost,
+                            roomData.value.port
+                        )
 
-                                launch(Dispatchers.IO) {
-                                    connectToRoomUseCase.invoke( roomData.value.ipHost,
-                                        roomData.value.port)
-
-                                    handleConnectionStatus()
-                                }
+                        handleConnectionStatus()
+                    }
                 }
 
                 is StartScreenIntent.GoingRoom -> {
@@ -127,7 +137,8 @@ class StartScreenViewModel @Inject constructor(
                                     }
 
                                     UiResult.TimeOut -> {
-                                        _uiState.value = Timeout("Still no rooms available. Please check back soon!")
+                                        _uiState.value =
+                                            Timeout("Still no rooms available. Please check back soon!")
                                     }
                                 }
                             }
@@ -170,14 +181,17 @@ class StartScreenViewModel @Inject constructor(
                             delay(1000 * (retryCount + 1).toLong())
 
                             if (!_connectionStatus.value) {
-                                connectToRoomUseCase.invoke(roomData.value.ipHost,
-                                    port = roomData.value.port)
+                                connectToRoomUseCase.invoke(
+                                    roomData.value.ipHost,
+                                    port = roomData.value.port
+                                )
                                 retryCount++
                             }
                         }
 
                         if (retryCount >= maxRetries && !_connectionStatus.value) {
-                            _uiState.value = Error("Failed to establish connection after $maxRetries attempts")
+                            _uiState.value =
+                                Error("Failed to establish connection after $maxRetries attempts")
                         }
                     }
                 }

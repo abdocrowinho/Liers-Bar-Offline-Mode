@@ -20,6 +20,7 @@ import com.example.liersbarofflinemode.ui.composable.MultipleGamePlayScreen.Game
 import com.example.liersbarofflinemode.ui.composable.MultipleGunScreen.MultipleGunScreen
 import com.example.liersbarofflinemode.ui.composable.EnterSinglePlayerScreen.EnterSinglePlayerScreen
 import com.example.liersbarofflinemode.ui.composable.LanGamePlay.LanGamePlayScreen
+import com.example.liersbarofflinemode.ui.composable.LiarProcessScreen.LiarProcessScreen
 import com.example.liersbarofflinemode.ui.composable.SingleGunScreen.SingleGunScreen
 import com.example.liersbarofflinemode.ui.composable.SinglePlayerGamePlay.SingleGamePlayScreen
 import com.example.liersbarofflinemode.ui.composable.startScreen.MyApp
@@ -92,18 +93,30 @@ fun AppNavHost(
                 )
             }
             composable(NavigationItem.SingleGunScreen.route)
-             { backStackEntry ->
+             {
                 val parentEntry = navController.getBackStackEntry(NavigationItem.SinglePlayersScreen.route)
                 val gamePlayViewModel: EnterSingleUserViewModel = hiltViewModel(parentEntry)
-
                 SingleGunScreen(navController =  navController, viewModel =  gamePlayViewModel)
-
             }
+
+        }
+        navigation(startDestination= NavigationItem.LanGamePlay.route,
+          route=  NavigationItem.LanGameGraph.route
+            ){
             composable(NavigationItem.LanGamePlay.route){
-                val lanGamePlayViewModel : LanGamePlayViewModel = hiltViewModel()
+                val parentEntry = remember {
+
+                 navController.getBackStackEntry(NavigationItem.LanGameGraph.route)}
+                val lanGamePlayViewModel: LanGamePlayViewModel = hiltViewModel(parentEntry)
                 LanGamePlayScreen(navController , lanGamePlayViewModel)
             }
 
+            composable(NavigationItem.LiarProcessScreen.route){
+                val parentEntry = remember {
+                 navController.getBackStackEntry(NavigationItem.LanGameGraph.route)}
+                val lanGamePlayViewModel : LanGamePlayViewModel = hiltViewModel(parentEntry)
+                LiarProcessScreen(navController = navController,lanGamePlayViewModel)
+            }
         }
 
     }
@@ -119,7 +132,9 @@ enum class ScreensNames {
     SINGLE_GAME_PLAY,
     SINGLE_GAME_GRAPH,
     GAME_GRAPH,
-    LAN_GAME_PLAY
+    LAN_GAME_PLAY,
+    LIAR_PROCESS,
+    LAN_GAME_GRAPH
 
 }
 
@@ -131,6 +146,9 @@ sealed class NavigationItem(val route: String) {
     data object GameGraph : NavigationItem(ScreensNames.GAME_GRAPH.name)
     data object SingleGunScreen : NavigationItem(ScreensNames.SINGLE_GUN_SCREEN.name)
     data object LanGamePlay : NavigationItem(ScreensNames.LAN_GAME_PLAY.name)
+    data object LiarProcessScreen : NavigationItem(ScreensNames.LIAR_PROCESS.name)
+
+    data object LanGameGraph : NavigationItem(ScreensNames.LAN_GAME_GRAPH.name)
 
 
     data object SingleGameGraph : NavigationItem(ScreensNames.SINGLE_GAME_GRAPH.name)
