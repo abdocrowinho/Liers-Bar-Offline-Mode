@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.example.liersbarofflinemode.ui.Intent.EventsLanGamePlayIntent
+import com.example.liersbarofflinemode.ui.ViewModels.LanGamePlayViewModel
 
 @Composable
 fun WarningBox(isWarning:Boolean){

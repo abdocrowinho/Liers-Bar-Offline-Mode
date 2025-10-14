@@ -24,6 +24,7 @@ import androidx.navigation.NavHostController
 import com.example.domain.Utlites.getMyIpAddress
 import com.example.liersbarofflinemode.R
 import com.example.liersbarofflinemode.ui.ViewModels.LanGamePlayViewModel
+import com.example.liersbarofflinemode.ui.composable.LanGamePlay.Composable.CardsUnderTestAnimation
 import com.example.liersbarofflinemode.ui.composable.LanGamePlay.Composable.OurCard
 import com.example.liersbarofflinemode.ui.composable.LanGamePlay.Composable.TablePlayers
 
@@ -32,6 +33,11 @@ fun LanGamePlayScreen(
     navController: NavHostController,
     lanGamePlayViewModel: LanGamePlayViewModel
 ) {
-   TablePlayers(lanGamePlayViewModel = lanGamePlayViewModel)
+    val tableState by lanGamePlayViewModel.uiState.collectAsState()
+   TablePlayers(lanGamePlayViewModel = lanGamePlayViewModel,navController)
     animateIntAsState(targetValue = 2, label = "")
+    CardsUnderTestAnimation(
+        tableState.cardsUnderTest
+        ,navController,
+        tableState.isPlayerCallingLiar,)
 }

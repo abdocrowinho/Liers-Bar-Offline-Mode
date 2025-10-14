@@ -38,7 +38,7 @@ fun LanPlayerAvatar(rotate: Float, playerState: LanUserEntity,modifier: Modifier
 
 
     Row(horizontalArrangement = Arrangement.Center,
-        modifier = Modifier.rotate(rotate)
+        modifier = modifier.rotate(rotate)
     )
     {
 

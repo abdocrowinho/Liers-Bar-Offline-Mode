@@ -20,23 +20,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.SavedStateHandle
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import com.example.data.DataSource.localeDataSource.RepoImpl.GamePlayRepoImpl
-import com.example.domain.UseCase.GetPlayersStateUseCase
-import com.example.domain.UseCase.KillGameUseCase
-import com.example.domain.UseCase.SetPlayersUseCase
 import com.example.liersbarofflinemode.ui.Intent.EnterSinglePlayerIntent
-import com.example.liersbarofflinemode.ui.States.GunScreenState
-import com.example.liersbarofflinemode.ui.States.LastBulletInGame
 import com.example.liersbarofflinemode.ui.Utltiy.GetWidthConf
 import com.example.liersbarofflinemode.ui.ViewModels.EnterSingleUserViewModel
-import com.example.liersbarofflinemode.ui.ViewModels.GamePlayViewModel
 import com.example.liersbarofflinemode.ui.composable.MultipleGunScreen.composable.AnimatedBullet
 import com.example.liersbarofflinemode.ui.composable.MultipleGunScreen.composable.FireEffectAnimation
 import com.example.liersbarofflinemode.ui.composable.MultipleGunScreen.composable.Gun
@@ -44,22 +34,19 @@ import com.example.liersbarofflinemode.ui.composable.MultipleGunScreen.composabl
 
 @SuppressLint("UseOfNonLambdaOffsetOverload")
 @Composable
-fun SingleGunScreen(viewModel: EnterSingleUserViewModel = hiltViewModel()
-                    , navController: NavController, userid: Int?=0) {
+fun SingleGunScreen(
+    viewModel: EnterSingleUserViewModel = hiltViewModel(),
+    navController: NavController,
+    userid: Int? = 0
+) {
     val context = LocalContext.current
     val gunShotState by viewModel.gunShotState.collectAsState()
 
 
     val xBulletOffset by animateDpAsState(
         targetValue = if (gunShotState.moveFireBullet == true) GetWidthConf() * -1 else 0.dp,
-        animationSpec = tween(durationMillis = 2000), label = ""
+        animationSpec = tween(durationMillis = 1000), label = ""
     )
-
-    val yWordStateOffset by animateDpAsState(
-        targetValue = if (gunShotState.bulletStateWord != null) GetWidthConf() * -1 else 0.dp,
-        animationSpec = tween(durationMillis = 1400), label = "wordState"
-    )
-
 
     LaunchedEffect(gunShotState.userAfterShot?.remainingBullets) {
         gunShotState.bulletVoice?.let { soundResId ->
@@ -91,23 +78,26 @@ fun SingleGunScreen(viewModel: EnterSingleUserViewModel = hiltViewModel()
         )
         Gun(
             modifier = Modifier.align(Alignment.Center),
-            userid = userid?:0, navController = navController,
-        ){
-            viewModel.handleIntent(EnterSinglePlayerIntent.GunFire){
+
+
+            ) {
+            viewModel.handleIntent(EnterSinglePlayerIntent.GunFire) {
                 navController.popBackStack()
             }
         }
-        AnimatedVisibility(visible =gunShotState.bulletStateWord != null,
+        AnimatedVisibility(
+            visible = gunShotState.bulletStateWord != null,
             enter = fadeIn(
-            ), exit = fadeOut(animationSpec = tween(1400))
-            , modifier = Modifier.align(Alignment.BottomCenter),
+            ),
+            exit = fadeOut(animationSpec = tween(1400)),
+            modifier = Modifier.align(Alignment.BottomCenter),
         ) {
-            Text(text = gunShotState.bulletStateWord ?:""
-                ,
+            Text(
+                text = gunShotState.bulletStateWord ?: "",
                 fontSize = 23.sp,
                 color = Color.White,
 
-            )
+                )
         }
 
 

@@ -20,7 +20,6 @@ import com.example.liersbarofflinemode.ui.Utltiy.GetWidthConf
 @Composable
 fun ThrowCardsAnimation(
     triggerAnimation: Boolean,
-    numberOfCards: Int = 1,
     direction: ThrowDirection = ThrowDirection.BOTTOM
 ,
             onAnimationEnd: () -> Unit,
@@ -59,7 +58,7 @@ fun ThrowCardsAnimation(
                 .zIndex(10f),
             contentAlignment = Alignment.Center
         ) {
-            repeat(numberOfCards) {
+
                 Image(
                     painter = painterResource(id = com.example.domain.R.drawable.card_back),
                     contentDescription = "Card",
@@ -71,7 +70,7 @@ fun ThrowCardsAnimation(
                             translationY = yOffset.value
                         }
                 )
-            }
+
         }
     }
 }
