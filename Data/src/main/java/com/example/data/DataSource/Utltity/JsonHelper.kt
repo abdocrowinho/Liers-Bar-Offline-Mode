@@ -4,6 +4,7 @@ import com.example.domain.GameEvents.CardPlayEvent
 import com.example.domain.GameEvents.Event
 import com.example.domain.GameEvents.JoinToGameEvent
 import com.example.domain.GameEvents.LiarCallEvent
+import com.example.domain.GameEvents.LiarCallResult
 import com.example.domain.GameEvents.PlayerShotEvent
 import com.example.domain.GameEvents.RoomStateEvent
 import com.example.domain.GameEvents.WarningEvent
@@ -29,6 +30,7 @@ object JsonHelper {
                     subclass(LiarCallEvent::class,LiarCallEvent.serializer())
                     subclass(PlayerShotEvent::class,PlayerShotEvent.serializer())
                     subclass(WarningEvent::class,WarningEvent.serializer())
+                    subclass(LiarCallResult::class,LiarCallResult.serializer())
                 }
             }
         }

@@ -1,6 +1,7 @@
 package com.example.data.DataSource.localeDataSource.LanServeis
 
 import android.util.Log
+import com.example.data.DataSource.Utltity.JsonHelper
 import com.example.domain.Entitys.Card
 import com.example.domain.Entitys.LanUserEntity
 import com.example.domain.GameEvents.CardPlayEvent
@@ -73,24 +74,27 @@ class GameWebSocketClient(
 
     override fun onMessage(message: String?) {
         println("📩 Message from server: $message")
-        if (message != null) {
 
-            val event = Json.decodeFromString(Event.serializer(), message)
+        if (message != null) {
+            println("🧩 Raw JSON from server -> $message")
 
             try {
+                val event = JsonHelper.Json.decodeFromString(Event.serializer(), message)
+                println("✅ Decoded event: ${event::class.simpleName}")
+
                 client?.handle(conn = connection, event)
 
                 CoroutineScope(Dispatchers.IO).launch {
-
                     _messageEvent.tryEmit(event)
-
                 }
 
             } catch (e: Exception) {
+                e.printStackTrace()
                 println("client-> ❌ Failed to parse event : ${e.message}")
             }
         }
     }
+
 
     override fun onClose(code: Int, reason: String?, remote: Boolean) {
         println("❌ Disconnected from server: $reason")

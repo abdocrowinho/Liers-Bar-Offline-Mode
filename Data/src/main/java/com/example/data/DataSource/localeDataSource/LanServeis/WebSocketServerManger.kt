@@ -7,7 +7,9 @@ object WebSocketServerManger {
     fun getServer ():GameWebSocketServer ? = server
 
     fun createServer(port:Int):GameWebSocketServer{
-        server = GameWebSocketServer(port)
+        if (server==null){
+            server = GameWebSocketServer(port)
+        }
         return server!!
     }
     fun stopServer() {
