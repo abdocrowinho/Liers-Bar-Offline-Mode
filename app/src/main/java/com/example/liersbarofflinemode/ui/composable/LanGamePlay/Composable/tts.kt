@@ -6,10 +6,19 @@ import java.util.Locale
 
 
 fun createTts(context: Context): TextToSpeech {
-    var tts : TextToSpeech? = null
-     tts = TextToSpeech(context) { status ->
+    var tts: TextToSpeech? = null
+    tts = TextToSpeech(context) { status ->
         if (status == TextToSpeech.SUCCESS) {
-            tts?.language = Locale("en", "UK")
+            // Fix: "GB" is the correct ISO code, not "UK"
+            val locale = Locale("en", "GB")
+            val result = tts?.setLanguage(locale)
+
+            // Fallback to US if GB not supported on this device
+            if (result == TextToSpeech.LANG_MISSING_DATA ||
+                result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                tts?.setLanguage(Locale.US)
+            }
+
             tts?.setPitch(0.1f)
             tts?.setSpeechRate(1.0f)
 

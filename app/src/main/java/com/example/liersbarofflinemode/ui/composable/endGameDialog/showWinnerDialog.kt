@@ -10,13 +10,17 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.data.DataSource.localeDataSource.RepoImpl.GamePlayRepoImpl
@@ -32,45 +36,61 @@ import com.example.liersbarofflinemode.ui.composable.endGameDialog.Composable.Pl
 @Composable
 fun ShowWinnerDialog(
     playerWinner: List<UserEntity>?,
-    modifier: Modifier, viewModel: EndGameDialogViewModel = hiltViewModel(),
-    text : String?="",
-    hasUserName : Boolean?=true,
-    navController: NavController?, reset: () -> Unit,
-
+    modifier: Modifier,
+    viewModel: EndGameDialogViewModel = hiltViewModel(),
+    text: String? = "",
+    hasUserName: Boolean? = true,
+    navController: NavController?,
+    reset: () -> Unit,
 ) {
     Card(
-        colors =
-        CardColors(
+        colors = CardColors(
             containerColor = colorResource(id = R.color.trans_black),
             contentColor = colorResource(id = R.color.trans_black),
             disabledContentColor = colorResource(id = R.color.trans_black),
             disabledContainerColor = colorResource(id = R.color.trans_black)
-        ), modifier = modifier
+        ),
+        modifier = modifier
             .wrapContentSize()
             .padding()
-            .width(GetWidthConf()*.50f)
+            .width(GetWidthConf() * .50f)
             .clip(RoundedCornerShape(15.dp))
             .border(
                 color = colorResource(id = R.color.dark_red),
                 width = 1.dp,
                 shape = RoundedCornerShape(15.dp)
             )
-    )
-    {
+    ) {
         Column(
-            modifier = Modifier.padding(
-                horizontal = 32.dp,
-            ), verticalArrangement = Arrangement.Top, horizontalAlignment = Alignment.Start
-
+            modifier = Modifier.padding(horizontal = 32.dp),
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.Start
         ) {
-            PlayerStateBar(playerWinner!! , text,hasUserName)
-            EndGameActionsButtons(viewModel, navController!!, reset)
+            // Fix 1: only show PlayerStateBar if list is not null and not empty
+            if (!playerWinner.isNullOrEmpty()) {
+                PlayerStateBar(playerWinner, text, hasUserName)
+            } else {
+                // LAN game over — just show winner text
+                Text(
+                    text = text ?: "",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
+            }
+
+            // Fix 2: only show buttons if navController is not null
+            if (navController != null) {
+                EndGameActionsButtons(viewModel, navController, reset)
+            } else {
+                // Fallback — just show play again button
+                TextButton(onClick = { reset() }) {
+                    Text(text = "Play Again", color = Color.White)
+                }
+            }
         }
     }
-
-
 }
-
 
 @Composable
 @Preview(

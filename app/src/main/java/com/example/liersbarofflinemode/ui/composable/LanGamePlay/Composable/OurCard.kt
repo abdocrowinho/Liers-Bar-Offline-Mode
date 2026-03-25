@@ -36,65 +36,63 @@ import org.jetbrains.annotations.Async
 
 
 @Composable
-fun OurCard(card: Card, viewModel: LanGamePlayViewModel,){
+fun OurCard(card: Card, viewModel: LanGamePlayViewModel) {
     val readyCardState by viewModel.readyCard.collectAsState()
-    val offsetY = remember {
-    Animatable(0f)
-    }
+    val offsetY = remember { Animatable(0f) }
     val coroutineScope = rememberCoroutineScope()
     val minOffset = -107f
     val maxOffset = 150f
-    var readyCardsCounter=0
-val isSelected = readyCardState.contains(card)
-    Box(modifier = Modifier
-        .offset { IntOffset(x = 0, offsetY.value.toInt()) }
-        .pointerInput(Unit) {
-            detectDragGestures(
+    val isSelected = readyCardState.contains(card)
 
-                onDragEnd = {
-                    coroutineScope.launch {
-                        if (offsetY.value == minOffset) {
-                            offsetY.animateTo(minOffset)
-                        } else {
-                            offsetY.animateTo(0f)
+    // Guard: skip rendering if imageCard is invalid
+    if (card.imageCard == 0) return
+
+    Box(
+        modifier = Modifier
+            .offset { IntOffset(x = 0, offsetY.value.toInt()) }
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragEnd = {
+                        coroutineScope.launch {
+                            if (offsetY.value == minOffset) {
+                                offsetY.animateTo(minOffset)
+                            } else {
+                                offsetY.animateTo(0f)
+                            }
                         }
-
+                        if (offsetY.value == minOffset) {
+                            viewModel.handelIntentCards(LanGamePlayIntent.AddReadyCard(card))
+                        } else {
+                            viewModel.handelIntentCards(LanGamePlayIntent.RemoveReadyCard(card))
+                        }
+                    },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        val newOffset = (offsetY.value + dragAmount.y).coerceIn(
+                            minimumValue = minOffset,
+                            maximumValue = maxOffset
+                        )
+                        if (readyCardState.size == 3 && !readyCardState.contains(card)) return@detectDragGestures
+                        coroutineScope.launch {
+                            offsetY.snapTo(newOffset)
+                        }
                     }
-                    if (offsetY.value == minOffset) {
-                        readyCardsCounter++
-                        viewModel.handelIntentCards(LanGamePlayIntent.AddReadyCard(card))
-                    } else {
-                        readyCardsCounter--
-                        viewModel.handelIntentCards(LanGamePlayIntent.RemoveReadyCard(card))
-
-                    }
-                },
-                onDrag = { change, dragAmount ->
-                    change.consume()
-                    val newOffset = (offsetY.value + dragAmount.y).coerceIn(
-                        minimumValue = minOffset,
-                        maximumValue = maxOffset
-                    )
- if (readyCardState.size==3 && !readyCardState.contains(card))return@detectDragGestures
-                    coroutineScope.launch {
-                        offsetY.snapTo(newOffset)
-                    }
-                }
-
-            )
-        }
-    )
-    {
-
-        Image(painter = painterResource(id =card.imageCard ),
+                )
+            }
+    ) {
+        Image(
+            painter = painterResource(id = card.imageCard),
             contentScale = ContentScale.FillBounds,
-
-            contentDescription ="card"
-            , modifier =
-            Modifier
-                .width(width = GetWidthConf() * .07f)
+            contentDescription = "card",
+            modifier = Modifier
+                .width(GetWidthConf() * .07f)
                 .height(GetHeightConf() * .25f)
-              )
+                .border(
+                    width = if (isSelected) 2.dp else 0.dp,
+                    color = if (isSelected) green_color else Color.Transparent,
+                    shape = RoundedCornerShape(4.dp)
+                )
+        )
     }
-    }
+}
 

@@ -12,12 +12,21 @@ data class TablePlayersState(
     var isMyTurn :Boolean=false,
     var tableBase : Rank?=null,
     var roundCounter : Int?=0,
-    val  cardsUnderTest:List<Card?>?= mutableListOf(),
+    val cardsUnderTest:List<Card?>?= mutableListOf(),
     val spokenText:String?="",
     val isPlayerCallingLiar :Boolean?=false,
     val isRealBullet:Boolean?=null,
     val looser:LanUserEntity?=null,
-    val bulletWordState :String?=""
+    val bulletWordState :String?="",
+    val isGameOver: Boolean = false,
+    val winnerName: String = "",
+    val winnerId: Int = -1,
+    val currentTurnId: Int = 0,
+    val bulletsBeforeShot: Int = 6,
+    val showBotVoteDialog: Boolean = false,
+    val botVoteYesCount: Int = 0,
+    val botVoteTotalPlayers: Int = 0,
+    val botVoteRejected: Boolean = false
 
 
 )

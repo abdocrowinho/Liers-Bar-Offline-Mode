@@ -1,9 +1,13 @@
 package com.example.liersbarofflinemode.ui.ViewModels
 
+import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.DataSource.localeDataSource.LanServeis.GameWebSocketServer
 import com.example.data.DataSource.localeDataSource.LanServeis.WebSocketServerManger
+import com.example.data.DataSource.localeDataSource.UDPs.UDPBroadcaster
+import com.example.data.DataSource.localeDataSource.deviceIdManger.DeviceIdManager
 import com.example.domain.Entitys.LanUserEntity
 import com.example.domain.Entitys.RoomEntity
 import com.example.domain.GameEvents.JoinToGameEvent
@@ -28,13 +32,13 @@ import com.example.liersbarofflinemode.ui.States.StartScreenState
 import com.example.liersbarofflinemode.ui.States.Success
 import com.example.liersbarofflinemode.ui.States.Timeout
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.internal.ws.WebSocketProtocol
 import java.net.ServerSocket
 import javax.inject.Inject
 
@@ -45,7 +49,8 @@ class StartScreenViewModel @Inject constructor(
     private val connectToRoomUseCase: ConnectToRoomUseCase,
     private val sendEventUseCase: SendEventUseCase,
     private val getConnectionStatusUseCase: GetConnectionStatusUseCase,
-    private val joinGameUseCase: JoinGameUseCase
+    private val joinGameUseCase: JoinGameUseCase,
+    @param:ApplicationContext val context: Context
 ) : ViewModel() {
 
     private val _userName = MutableStateFlow("")
@@ -65,7 +70,9 @@ class StartScreenViewModel @Inject constructor(
     )
 
     private var gameWebSocketServer: GameWebSocketServer? = null
-    private var chosenPort: Int = 0
+
+    // ✅ Navigation guard — prevents GoingToGame from firing more than once
+    private var hasNavigated = false
 
     fun handleIntent(intent: StartScreenIntent, name: String) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -82,38 +89,45 @@ class StartScreenViewModel @Inject constructor(
                     MangerLanPlayerState.setState(LanPlayerState.Host)
                     _userName.value = name
 
-                    ServerSocket(0).use { serverSocket ->
-                        chosenPort = serverSocket.localPort
+                    val freePort = ServerSocket(0).use { it.localPort }
+                    gameWebSocketServer = WebSocketServerManger.createServer(freePort)
 
-                        gameWebSocketServer = WebSocketServerManger.createServer(chosenPort)
-
-                        gameWebSocketServer?.start()
-
+                    gameWebSocketServer?.setOnStartedListener {
                         viewModelScope.launch(Dispatchers.IO) {
-                            createRoomUseCase.invoke(
-                                player = _userName.value,
-                                chosenPort.toString()
-                            )
-
                             gameWebSocketServer!!.addHostPlayer(_userName.value)
                             gameWebSocketServer?.printPlayers()
 
+                            createRoomUseCase.invoke(
+                                player = _userName.value,
+                                freePort.toString()
+                            )
+
+                            // ✅ Guard for host navigation too
                             withContext(Dispatchers.Main) {
-                                _navigationState.value = NavigationState.GoingToGame
+                                if (!hasNavigated) {
+                                    hasNavigated = true
+                                    _navigationState.value = NavigationState.GoingToGame
+                                }
                             }
                         }
                     }
+
+                    gameWebSocketServer?.start()
                 }
 
                 is StartScreenIntent.Join -> {
                     MangerLanPlayerState.setState(LanPlayerState.Client)
+                    val deviceId = DeviceIdManager.getDeviceId(context)
+                    Log.d("Join", "attempting join ip=${roomData.value.ipHost} port=${roomData.value.port} name=${_userName.value} deviceId=$deviceId")
                     launch(Dispatchers.IO) {
                         connectToRoomUseCase.invoke(
                             roomData.value.ipHost,
-                            roomData.value.port
+                            roomData.value.port,
+                            deviceId = deviceId,
+                            playerName = _userName.value
                         )
-
-                        handleConnectionStatus()
+                        Log.d("Join", "connectToRoomUseCase done — waiting for status")
+                        handleConnectionStatus(deviceId = deviceId, _userName.value)
                     }
                 }
 
@@ -153,47 +167,30 @@ class StartScreenViewModel @Inject constructor(
         }
     }
 
-    private fun sendPlayer() {
+    // ✅ Called from UI after navigation is consumed, so state doesn't re-trigger on recomposition
+    fun onNavigationHandled() {
+        _navigationState.value = null
+    }
+
+    private fun sendPlayer(deviceId: String) {
         viewModelScope.launch {
-            joinGameUseCase.invoke(_userName.value)
+            joinGameUseCase.invoke(_userName.value, deviceId = deviceId)
         }
     }
 
-    private fun handleConnectionStatus() {
+    private fun handleConnectionStatus(deviceId: String, playerName: String) {
         viewModelScope.launch {
+            Log.d("Join", "handleConnectionStatus started")
             getConnectionStatusUseCase.invoke().collect { status ->
-                _connectionStatus.value = status
-
-
-                when (status) {
-                    true -> {
-                        sendPlayer()
+                Log.d("Join", "status=$status hasNavigated=$hasNavigated")
+                if (status && !hasNavigated) {
+                    hasNavigated = true
+                    withContext(Dispatchers.Main) {
                         _navigationState.value = NavigationState.GoingToGame
                     }
-
-                    false -> {
-                        _uiState.value = Loading
-
-                        var retryCount = 0
-                        val maxRetries = 5
-
-                        while (retryCount < maxRetries && !_connectionStatus.value) {
-                            delay(1000 * (retryCount + 1).toLong())
-
-                            if (!_connectionStatus.value) {
-                                connectToRoomUseCase.invoke(
-                                    roomData.value.ipHost,
-                                    port = roomData.value.port
-                                )
-                                retryCount++
-                            }
-                        }
-
-                        if (retryCount >= maxRetries && !_connectionStatus.value) {
-                            _uiState.value =
-                                Error("Failed to establish connection after $maxRetries attempts")
-                        }
-                    }
+                    // Send join event after navigation — give ViewModel time to init
+                    delay(800)
+                    sendPlayer(deviceId = deviceId)
                 }
             }
         }
@@ -201,6 +198,7 @@ class StartScreenViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
+        UDPBroadcaster.stopBroadcasting()
         gameWebSocketServer?.stop()
     }
 }

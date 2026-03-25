@@ -30,12 +30,10 @@ fun CardsUnderTestAnimation(
     val yTarget = -1f
     val cardSpacing = screenWidth * 0.1f
 
-    // نحتفظ بـ Animatable لكل كارت
     val yOffsets = remember(cardsUnderTest?.size) {
         cardsUnderTest?.map { Animatable(yStart) } ?: emptyList()
     }
 
-    // عرض الكروت في منتصف الشاشة
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -55,7 +53,6 @@ fun CardsUnderTestAnimation(
         }
     }
 
-    // 🔥 هنا بقى اللي بيشغل الأنيميشن فعليًا
     LaunchedEffect(isPlayerCallLiar, cardsUnderTest) {
         println("🔥 LaunchedEffect triggered, liar=$isPlayerCallLiar, cards=${cardsUnderTest?.size}")
         if (isPlayerCallLiar == true && !cardsUnderTest.isNullOrEmpty()) {

@@ -29,7 +29,7 @@ fun ThrowCardsAnimation(
 
     LaunchedEffect(triggerAnimation) {
         if (triggerAnimation) {
-            // تحديد قيمة البداية حسب الاتجاه
+            
             when (direction) {
                 ThrowDirection.BOTTOM -> yOffset.snapTo(300f)
                 ThrowDirection.TOP -> yOffset.snapTo(-300f)

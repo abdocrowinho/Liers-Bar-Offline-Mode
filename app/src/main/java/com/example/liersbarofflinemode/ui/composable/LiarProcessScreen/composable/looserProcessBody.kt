@@ -2,6 +2,7 @@ package com.example.liersbarofflinemode.ui.composable.LiarProcessScreen.composab
 
 import LanPlayerAvatar
 import android.media.MediaPlayer
+import android.speech.tts.TextToSpeech
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -34,6 +35,7 @@ import com.example.liersbarofflinemode.R
 import com.example.liersbarofflinemode.ui.States.TablePlayersState
 import com.example.liersbarofflinemode.ui.Utltiy.GetHeightConf
 import com.example.liersbarofflinemode.ui.Utltiy.GetWidthConf
+import com.example.liersbarofflinemode.ui.composable.LiarProcessScreen.helper.AnimationStepper
 import com.example.liersbarofflinemode.ui.composable.MultipleGunScreen.composable.FireEffectAnimation
 import com.example.liersbarofflinemode.ui.composable.MultipleGunScreen.composable.Gun
 import kotlinx.coroutines.Dispatchers
@@ -42,46 +44,66 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun LooserProcessBody(state: TablePlayersState,startNewRound:suspend()->Unit,back : ()->Unit){
+fun LooserProcessBody(
+    state: TablePlayersState,
+    tts: TextToSpeech,
+    back: () -> Unit
+) {
     val localContext = LocalContext.current
     val playerAvatarOffsetXAnimation = remember { androidx.compose.animation.core.Animatable(-500f) }
     val gunOffsetXAnimation = remember { androidx.compose.animation.core.Animatable(500f) }
-    val playerAvatarOffsetX =(GetWidthConf() * .2f.times(-1)).value
-    val gunOffsetX =(GetWidthConf() * .2f).value
-    var bulletWordState by remember { mutableStateOf(false) }
-    var isBulletRun by remember { mutableStateOf(false) }
+    val playerAvatarOffsetX = (GetWidthConf() * .2f.times(-1)).value
+    val gunOffsetX = (GetWidthConf() * .2f).value
+
+    var currentStep by remember { mutableStateOf(AnimationStepper.IDLE) }
+
+    // Fix: snapshot bullet count BEFORE animation starts
+    // so we can show original count until step 4
+    val originalBullets = remember(state.looser?.id) {
+        val current = state.looser?.remainingBullets ?: 0
+        if (state.isRealBullet == true) {
+            current + 1  // restore for display
+        } else {
+            current + 1  // same either way
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
-
         Image(
             painter = painterResource(id = R.drawable.game_play_background),
             contentDescription = "backGround",
-            contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize()
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier.fillMaxSize()
         )
 
+        state.looser?.let { looser ->
 
-        state.looser?.let {
+            // Show original bullets until BULLETS_UPDATE step
+            val displayPlayer = remember(currentStep) {
+                if (currentStep >= AnimationStepper.BULLETS_UPDATE) {
+                    looser // show updated bullets from server
+                } else {
+                    // show bullets BEFORE the shot
+                    looser.copy(remainingBullets = state.bulletsBeforeShot)
+                }
+            }
+
             LanPlayerAvatar(
-                rotate = 0f, playerState = it,
-
+                rotate = 0f,
+                playerState = displayPlayer,
                 modifier = Modifier
                     .align(Alignment.Center)
-
-                    .offset(
-                        x = playerAvatarOffsetXAnimation.value.dp
-                    ), size = 80.dp
+                    .offset(x = playerAvatarOffsetXAnimation.value.dp),
+                size = 80.dp,
             )
-
 
             Gun(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .offset(
-                        x = gunOffsetXAnimation.value.dp
-                    ),
-
+                    .offset(x = gunOffsetXAnimation.value.dp),
                 height = GetHeightConf() * .5f,
-                width = GetWidthConf() * .3f){}
+                width = GetWidthConf() * .3f
+            ) {}
 
             FireEffectAnimation(
                 modifier = Modifier
@@ -89,99 +111,77 @@ fun LooserProcessBody(state: TablePlayersState,startNewRound:suspend()->Unit,bac
                     .offset(
                         x = GetWidthConf() * .08f.times(-1),
                         y = GetHeightConf() * .12f.times(-1)
-                    )
-                   , isDeadlyBullet = state.isRealBullet?:false&&isBulletRun
+                    ),
+                isDeadlyBullet = (state.isRealBullet == true) &&
+                        currentStep >= AnimationStepper.GUN_FIRING
             )
 
             AnimatedVisibility(
-                visible = bulletWordState,
-                enter = fadeIn(
-                ),
-                exit = fadeOut(animationSpec = tween(1400)),
-                modifier = Modifier.align(Alignment.BottomCenter),
+                visible = currentStep == AnimationStepper.TEXT_SHOWING ||
+                        currentStep == AnimationStepper.BULLETS_UPDATE,
+                enter = fadeIn(animationSpec = tween(600)),
+                exit = fadeOut(animationSpec = tween(600)),
+                modifier = Modifier.align(Alignment.BottomCenter)
             ) {
                 Text(
-                    text = state.bulletWordState?:"",
+                    text = state.bulletWordState ?: "",
                     fontSize = 23.sp,
-                    color = Color.White,
-
-                    )
+                    color = Color.White
+                )
             }
-
         }
-
     }
 
-LaunchedEffect(key1 = state.looser) {
-    if (state.looser!=null){
+    LaunchedEffect(key1 = state.looser) {
+        if (state.looser == null) return@LaunchedEffect
 
+        // Step 1: slide in avatar + gun
+        currentStep = AnimationStepper.SLIDING_IN
+        launch {
             playerAvatarOffsetXAnimation.animateTo(
-                targetValue = playerAvatarOffsetX
-                , animationSpec = tween(1000)
-            )
-            gunOffsetXAnimation.animateTo(
-                targetValue = gunOffsetX,
+                targetValue = playerAvatarOffsetX,
                 animationSpec = tween(1000)
-
             )
-        startNewRound()
+        }
+        gunOffsetXAnimation.animateTo(
+            targetValue = gunOffsetX,
+            animationSpec = tween(1000)
+        )
 
-    }
-
-    withContext(Dispatchers.Main){
-        isBulletRun =true
-        delay(500)
-        state.gunSound.let { soundResId ->
-            val player = MediaPlayer.create(localContext, soundResId?:0)
-            player.start()
-            player.setOnCompletionListener {
+        // Step 2: gun fires
+        currentStep = AnimationStepper.GUN_FIRING
+        val soundResId = state.gunSound ?: 0
+        if (soundResId != 0) {
+            val player = MediaPlayer.create(localContext, soundResId)
+            player?.start()
+            var soundDone = false
+            player?.setOnCompletionListener {
+                soundDone = true
                 it.release()
             }
+            var waited = 0
+            while (!soundDone && waited < 3000) {
+                delay(100)
+                waited += 100
+            }
         }
-        delay(1000)
-        bulletWordState=true
-        delay(1000)
-        bulletWordState = false
 
-    }
-    back()
-
-
-}
-//    LaunchedEffect(isBulletRun) {
-//        state.gunSound.let { soundResId ->
-//            val player = MediaPlayer.create(localContext, soundResId?:0)
-//            player.start()
-//            player.setOnCompletionListener {
-//                it.release()
-//            }
-//        }
-//    }
-}
-@Composable
-@Preview(device = "spec:parent=pixel_5,orientation=landscape", showSystemUi = true,
-    showBackground = true
-)
-fun LiarProcessScreenPreview(){
-    val player = LanUserEntity(
-        id = 1,
-        ipAddress = "192.168.1.2",
-        name = "Player 1",
-        image =" https://robohash.org/ahmed?set=set5",
-        isAlive = true,
-        numOfShot = 0,
-        remainingBullets = 6,
-        cards = listOf(
-            Card(id = 1, rank =Rank.ACE, imageCard = 1, colorHex ="" ),
-            Card(id = 2, rank =Rank.ACE, imageCard = 1, colorHex ="" )
-        ),
-        isHost = true
-    )
-    val state = TablePlayersState(looser =  player, spokenText = "lucky guy , crowinho",
-        isRealBullet = true,
-        gunSound = R.raw.gun_shot ,
-
-
-
+        // Step 3: spoken text + TTS
+        currentStep = AnimationStepper.TEXT_SHOWING
+        tts.speak(
+            state.bulletWordState ?: "",
+            android.speech.tts.TextToSpeech.QUEUE_FLUSH,
+            null,
+            null
         )
+        delay(2000)
+
+        // Step 4: bullets decrease AFTER gun fires and text shows
+        currentStep = AnimationStepper.BULLETS_UPDATE
+        delay(1000)
+
+        // Step 5: done
+        currentStep = AnimationStepper.DONE
+        back()
+    }
 }

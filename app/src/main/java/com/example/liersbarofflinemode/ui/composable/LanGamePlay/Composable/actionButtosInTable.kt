@@ -7,6 +7,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.example.domain.Entitys.Card
 import com.example.domain.Entitys.LanUserEntity
 import com.example.liersbarofflinemode.ui.Intent.EventsLanGamePlayIntent
 import com.example.liersbarofflinemode.ui.ViewModels.LanGamePlayViewModel
@@ -17,7 +18,8 @@ fun ActionButtonInTable(lanGamePlayViewModel : LanGamePlayViewModel ,
                         text : String,
                         intent: EventsLanGamePlayIntent,
                         modifier: Modifier = Modifier,
-                        isMyTurn : Boolean
+                        isMyTurn : Boolean,
+                        readyCards: MutableList<Card> ?= emptyList<Card>().toMutableList()
                         ){
 
     Button(onClick =
@@ -42,7 +44,7 @@ fun ActionButtonInTable(lanGamePlayViewModel : LanGamePlayViewModel ,
             )
         ,
 
-        enabled = true
+        enabled = if (text=="Throw"){ isMyTurn && readyCards?.size!=0}else {isMyTurn}
     ) {
         Text(text = text)
     }

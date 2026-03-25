@@ -12,12 +12,13 @@ import com.example.liersbarofflinemode.ui.ViewModels.LanGamePlayViewModel
 fun PlayerCards(
     modifier: Modifier,
     lanGamePlayViewModel: LanGamePlayViewModel,
-    activePlayer:LanUserEntity
-    ){
-    LazyRow( modifier =modifier) {
-        items(activePlayer.cards , key = {it.id}){ card->
-            OurCard( card = card , viewModel = lanGamePlayViewModel )
+    activePlayer: LanUserEntity
+) {
+    val validCards = activePlayer.cards.filter { it.imageCard != 0 }
+
+    LazyRow(modifier = modifier) {
+        items(validCards, key = { it.id }) { card ->
+            OurCard(card = card, viewModel = lanGamePlayViewModel)
         }
     }
-
 }
