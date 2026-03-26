@@ -6,7 +6,7 @@ import javax.inject.Inject
 class JoinGameUseCase @Inject constructor(
     val lanGamePLay: LanGamePLay
 ) {
-   suspend fun invoke(playerName:String){
-        lanGamePLay.join(playerName = playerName)
+   suspend fun invoke(playerName:String, deviceId:String ){
+        lanGamePLay.join(playerName = playerName,deviceId)
     }
 }

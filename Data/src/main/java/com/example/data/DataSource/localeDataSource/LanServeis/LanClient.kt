@@ -27,42 +27,64 @@ class GameWebSocketClient(
     val onConnectedError: (String) -> Unit
 ) : WebSocketClient(serverUri) {
 
-    private var _messageEvent = MutableSharedFlow<Event>(1)
+    private var _messageEvent = MutableSharedFlow<Event>(
+        replay = 0,
+        extraBufferCapacity = 20
+    )
     val messageEvent: SharedFlow<Event> get() = _messageEvent
 
     val playersInRoom = MutableStateFlow<MutableList<LanUserEntity?>?>(mutableListOf())
     private var client: ClientHandler? = null
     private var tablesCards: MutableList<Card>? = mutableListOf()
-    private lateinit var baseTable: Card
+    private var baseTable: Card? = null
     private var roundCounter = 0
 
     init {
-
-        client = ClientHandler(client = this,
+        client = ClientHandler(
+            client = this,
             onRoomUpdate = { event ->
-
                 playersInRoom.value = event.playersInRoom.toMutableList()
                 tablesCards = event.tablesCards
-                baseTable = event.tableBase!!
+                // Bug 1 fix: safe assignment, don't crash if null
+                if (event.baseTable != null) baseTable = event.baseTable
                 roundCounter = event.round ?: 0
-
-                RoomStateEvent(event.playersInRoom, roundCounter, tablesCards, baseTable)
-                    .let { _messageEvent.tryEmit(it) }
-
+                _messageEvent.tryEmit(event)
             },
-
             onPlayCard = { cardPlayEvent ->
                 _messageEvent.tryEmit(cardPlayEvent)
-
-            }, onLiarCall = {},
-            onWarning = { onWarning ->
-                _messageEvent.tryEmit(onWarning)
+            },
+            onLiarCall = { liarCallEvent ->
+                _messageEvent.tryEmit(liarCallEvent)
+            },
+            onLiarCallResult = { liarCallResult ->
+                _messageEvent.tryEmit(liarCallResult)
+            },
+            onWarning = { warningEvent ->
+                _messageEvent.tryEmit(warningEvent)
+            },
+                    onGameOver = { event ->
+                _messageEvent.tryEmit(event)
+            },
+            onPlayAgain = { event ->
+                _messageEvent.tryEmit(event)
+            },
+            onBotVoteState = { event ->
+                _messageEvent.tryEmit(event)
             }
         )
-        CoroutineScope(Dispatchers.IO).launch {
-            messageEvent.collect { messageEvent ->
-                Log.d("message event in client", messageEvent.toString())
-            }
+    }
+
+    override fun onMessage(message: String?) {
+        println("📩 Message from server: $message")
+        if (message == null) return
+        try {
+            val event = JsonHelper.Json.decodeFromString(Event.serializer(), message)
+            println("✅ Decoded event: ${event::class.simpleName}")
+            // Bug 3 fix: only handle via ClientHandler, no second emit
+            client?.handle(conn = connection, event)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            println("client-> ❌ Failed to parse event : ${e.message}")
         }
     }
 
@@ -71,31 +93,6 @@ class GameWebSocketClient(
         onConnectedSuccess()
 
     }
-
-    override fun onMessage(message: String?) {
-        println("📩 Message from server: $message")
-
-        if (message != null) {
-            println("🧩 Raw JSON from server -> $message")
-
-            try {
-                val event = JsonHelper.Json.decodeFromString(Event.serializer(), message)
-                println("✅ Decoded event: ${event::class.simpleName}")
-
-                client?.handle(conn = connection, event)
-
-                CoroutineScope(Dispatchers.IO).launch {
-                    _messageEvent.tryEmit(event)
-                }
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-                println("client-> ❌ Failed to parse event : ${e.message}")
-            }
-        }
-    }
-
-
     override fun onClose(code: Int, reason: String?, remote: Boolean) {
         println("❌ Disconnected from server: $reason")
     }

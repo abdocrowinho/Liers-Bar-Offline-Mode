@@ -7,7 +7,10 @@ class ConnectToRoomUseCase @Inject constructor (
     private val lanGamePlayRepo: LanGamePLay
 
 ) {
-   suspend  fun invoke(ip:String,port:String){
-        lanGamePlayRepo.connectToGameServer(ip,port=port)
+   suspend  fun invoke(  serverIp: String,
+                         port: String,
+                         deviceId: String,
+                         playerName: String){
+        lanGamePlayRepo.connectToGameServer(serverIp = serverIp, port = port, playerName = playerName, deviceId = deviceId)
     }
 }

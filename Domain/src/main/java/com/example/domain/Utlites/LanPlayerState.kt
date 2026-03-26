@@ -4,10 +4,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 object MangerLanPlayerState {
-    private var _state= MutableStateFlow(LanPlayerState.ThereISNoState)
-    val state = _state.asStateFlow()
-    fun setState(state: LanPlayerState) {
-        this._state.value = state
+    val state = MutableStateFlow(LanPlayerState.ThereISNoState)
+    var playerName: String = ""
+    var deviceId: String = ""
+
+    fun setState(newState: LanPlayerState, name: String = "", id: String = "") {
+        state.value = newState
+        playerName = name
+        deviceId = id
     }
 }
 

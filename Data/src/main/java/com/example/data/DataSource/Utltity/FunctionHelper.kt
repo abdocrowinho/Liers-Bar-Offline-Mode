@@ -5,15 +5,42 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import org.java_websocket.WebSocket
 
 object FunctionHelper {
-     fun afterPlayer(players: MutableStateFlow<MutableMap<WebSocket?, LanUserEntity?>>, id: Int): Int {
-        val handleId = if (id == 1) 4 else {
-            id.minus(1)
-        }
-        val player = players.value.values.find { it?.id == handleId }
-        return if (player?.isAlive != false) {
-            handleId
-        } else {
-            afterPlayer(id = handleId, players = players)
-        }
+
+    fun nextPlayer(
+        players: MutableStateFlow<MutableMap<WebSocket?, LanUserEntity?>>,
+        currentId: Int
+    ): Int {
+        val alivePlayers = players.value.values
+            .filterNotNull()
+            .filter { it.isAlive }
+            .sortedBy { it.id }
+
+        if (alivePlayers.isEmpty()) return currentId
+        if (alivePlayers.size == 1) return alivePlayers.first().id
+
+        val currentIndex = alivePlayers.indexOfFirst { it.id == currentId }
+        if (currentIndex == -1) return alivePlayers.first().id
+
+        val nextIndex = (currentIndex + 1) % alivePlayers.size
+        return alivePlayers[nextIndex].id
+    }
+
+    fun previousPlayer(
+        players: MutableStateFlow<MutableMap<WebSocket?, LanUserEntity?>>,
+        currentId: Int
+    ): Int {
+        val alivePlayers = players.value.values
+            .filterNotNull()
+            .filter { it.isAlive }
+            .sortedBy { it.id }
+
+        if (alivePlayers.isEmpty()) return currentId
+        if (alivePlayers.size == 1) return alivePlayers.first().id
+
+        val currentIndex = alivePlayers.indexOfFirst { it.id == currentId }
+        if (currentIndex == -1) return alivePlayers.first().id
+
+        val prevIndex = (currentIndex - 1 + alivePlayers.size) % alivePlayers.size
+        return alivePlayers[prevIndex].id
     }
 }

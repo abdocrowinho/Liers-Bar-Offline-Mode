@@ -11,6 +11,7 @@ import com.example.domain.Entitys.LanUserEntity
 import com.example.domain.Entitys.RoomEntity
 import com.example.domain.GameEvents.Event
 import com.example.domain.GameEvents.JoinToGameEvent
+import com.example.domain.GameEvents.ReconnectEvent
 import com.example.domain.Repo.LanGamePLay
 import com.example.domain.Utlites.UiResult
 import com.example.domain.Utlites.getMyIpAddress
@@ -32,39 +33,57 @@ import javax.inject.Inject
 
 class LanGamePlayRepoImpl @Inject constructor(
     private val gamePlayLanWebSocketFactory: GamePlayLanWebSocketFactory,
-
     @ApplicationContext val context: Context
 ) : LanGamePLay {
+
     private lateinit var webSocketClient: GameWebSocketClient
 
     private val _isWepSocketOpen = MutableStateFlow(false)
     override fun isWebSocketOpen(): Flow<Boolean> = _isWepSocketOpen
 
-
     override suspend fun createRoom(room: RoomEntity) {
         UDPBroadcaster.startBroadcasting(room)
-
     }
 
-    override suspend fun connectToGameServer(serverIp: String, port: String) {
+    override suspend fun connectToGameServer(
+        serverIp: String,
+        port: String,
+        deviceId: String,
+        playerName: String
+    ) {
+        if (::webSocketClient.isInitialized && webSocketClient.isOpen) {
+            Log.d("LanGamePlayRepo", "already open")
+            return
+        }
+
         val uri = URI("ws://$serverIp:$port/game")
         webSocketClient = gamePlayLanWebSocketFactory.create(
-            uri, onSuccess = {
+            uri,
+            onSuccess = {
                 _isWepSocketOpen.value = true
-
-            }, onErrorAction = {
+            },
+            onErrorAction = {
                 _isWepSocketOpen.value = false
-            })
+            }
+        )
         webSocketClient.connect()
     }
 
-    override suspend fun join(playerName: String) {
+    // Fix: separate function called AFTER navigation is complete
+    override suspend fun sendReconnectEvent(deviceId: String, playerName: String) {
         repeat(10) { attempt ->
             if (webSocketClient.isOpen) return@repeat
             delay(300)
-            if (attempt == 9 && !webSocketClient.isOpen) {
-                throw IllegalStateException("WebSocket connection failed to open after waiting")
-            }
+        }
+        webSocketClient.sendGameEvent(
+            ReconnectEvent(deviceId = deviceId, playerName = playerName)
+        )
+    }
+
+    override suspend fun join(playerName: String, deviceId: String) {
+        repeat(20) { attempt ->
+            if (webSocketClient.isOpen) return@repeat
+            delay(150)
         }
         val newUser = LanUserEntity(
             name = playerName,
@@ -73,13 +92,15 @@ class LanGamePlayRepoImpl @Inject constructor(
             isAlive = true,
             image = "https://robohash.org/${playerName}?set=set5",
             id = 0,
-            ipAddress = getMyIpAddress(),
+            ipAddress = getMyIpAddress(), // Fix: real IP
             cards = mutableListOf(),
-            isHost = false
+            isHost = false,
+            deviceId = deviceId
         )
-        webSocketClient.sendGameEvent(event = JoinToGameEvent(newUser))
+        webSocketClient.sendGameEvent(
+            ReconnectEvent(deviceId = deviceId, playerName = playerName)
+        )
     }
-
 
     override fun getRoom(): Flow<UiResult<RoomEntity>> = callbackFlow {
         trySend(UiResult.Loading)
@@ -111,7 +132,6 @@ class LanGamePlayRepoImpl @Inject constructor(
         return WebSocketServerManger.getServer()?.players!!.map {
             it.values.toList()
         }
-
     }
 
     override suspend fun getMessage(): SharedFlow<Event?> {
@@ -121,5 +141,4 @@ class LanGamePlayRepoImpl @Inject constructor(
             MutableSharedFlow(replay = 1)
         }
     }
-
 }

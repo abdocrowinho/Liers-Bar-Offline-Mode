@@ -7,5 +7,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 @SerialName("JoinedGameEvent")
 data class JoinToGameEvent(
-    val player: LanUserEntity
+    val player: LanUserEntity,
+    val deviceId: String = ""
 ):Event()

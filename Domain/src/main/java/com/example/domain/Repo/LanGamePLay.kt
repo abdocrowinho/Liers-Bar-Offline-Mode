@@ -12,8 +12,12 @@ import kotlinx.coroutines.flow.SharedFlow
 
 interface LanGamePLay {
     suspend fun createRoom(room : RoomEntity)
- suspend fun connectToGameServer (serverIp: String,port:String)
-    suspend fun join(playerName: String)
+ suspend fun connectToGameServer (serverIp: String,
+                                  port: String,
+                                  deviceId: String,
+                                  playerName: String)
+    suspend fun join(playerName: String,deviceId:String)
+    suspend fun sendReconnectEvent(deviceId: String, playerName: String)
     fun isWebSocketOpen():Flow<Boolean>
     fun getRoom(): Flow<UiResult< RoomEntity?>>
     fun sendEvent(event: Event)

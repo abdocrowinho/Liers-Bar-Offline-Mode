@@ -11,5 +11,7 @@ data class RoomStateEvent(
     val playersInRoom:  List<LanUserEntity?>,
     val round : Int ?=0,
     val tablesCards:MutableList<Card>?,
-    val tableBase : Card?
+     var baseTable: Card? = null,
+    val currentTurnId: Int = 0  // add this
+
 ):Event()
