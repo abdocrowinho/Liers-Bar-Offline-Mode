@@ -23,7 +23,7 @@ class ClientHandler(
     val onWarning: (WarningEvent) -> Unit,
     val onGameOver: (GameOverEvent) -> Unit,
     val onPlayAgain: (PlayAgainEvent) -> Unit,
-    val onBotVoteState: (BotVoteStateEvent) -> Unit,  // Add this
+    val onBotVoteState: (BotVoteStateEvent) -> Unit,
 ) {
     fun handle(conn: WebSocket, event: Event) {
         when (event) {
@@ -34,7 +34,7 @@ class ClientHandler(
             is WarningEvent -> onWarning(event)
             is GameOverEvent -> onGameOver(event)
             is PlayAgainEvent -> onPlayAgain(event)
-            is BotVoteStateEvent -> onBotVoteState(event)  // Add this
+            is BotVoteStateEvent -> onBotVoteState(event)
             is JoinToGameEvent -> {}
             is PlayerShotEvent -> {}
             is StartRoundEvent -> {}

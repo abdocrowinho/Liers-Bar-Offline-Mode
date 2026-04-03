@@ -55,7 +55,7 @@ class LanGamePlayViewModel @Inject constructor(
     @param:ApplicationContext val context: Context
 ) : ViewModel() {
 
-    // ─── State ────────────────────────────────────────────────────────────────
+    //State
 
     private val _players = MutableStateFlow<MutableList<LanUserEntity?>?>(null)
     val players: StateFlow<MutableList<LanUserEntity?>?> get() = _players
@@ -73,14 +73,13 @@ class LanGamePlayViewModel @Inject constructor(
 
     private var activePlayerState = MangerLanPlayerState.state.value.name
 
-    // ✅ Real countdown timer — exposed to UI, counts 10→0
+    // Real countdown timer
     private var timerJob: Job? = null
     private val _timerValue = MutableStateFlow(0)
     val timerValue: StateFlow<Int> = _timerValue.asStateFlow()
 
     private val sharedClientEvents = MutableSharedFlow<Event?>(replay = 0)
 
-    // ─── Init ─────────────────────────────────────────────────────────────────
 
     init {
         viewModelScope.launch {
@@ -109,7 +108,7 @@ class LanGamePlayViewModel @Inject constructor(
         }
     }
 
-    // ─── Observers ────────────────────────────────────────────────────────────
+    //Observers
 
     private fun observePlayers() {
         viewModelScope.launch {
@@ -143,7 +142,7 @@ class LanGamePlayViewModel @Inject constructor(
         }
     }
 
-    // ─── Intents ──────────────────────────────────────────────────────────────
+    // Intents
 
     fun handelIntentCards(intent: LanGamePlayIntent) {
         when (intent) {
@@ -154,6 +153,7 @@ class LanGamePlayViewModel @Inject constructor(
                 current.add(intent.card)
                 _readyCard.value = current
             }
+
             is LanGamePlayIntent.RemoveReadyCard -> {
                 val current = _readyCard.value.toMutableList()
                 current.removeAll { it == intent.card }
@@ -213,21 +213,21 @@ class LanGamePlayViewModel @Inject constructor(
         }
     }
 
-    // ─── UI State Handlers ────────────────────────────────────────────────────
+    // UI State Handlers
 
     private suspend fun handleUiState(event: Event) {
         when (event) {
-            is CardPlayEvent     -> onCardPlayed(event)
-            is RoomStateEvent    -> onRoomState(event)
-            is LiarCallEvent     -> onLiarCall(event)
-            is LiarCallResult    -> onLiarCallResult(event)
+            is CardPlayEvent -> onCardPlayed(event)
+            is RoomStateEvent -> onRoomState(event)
+            is LiarCallEvent -> onLiarCall(event)
+            is LiarCallResult -> onLiarCallResult(event)
             is BotVoteStateEvent -> onBotVoteState(event)
-            is GameOverEvent     -> onGameOver(event)
-            is PlayAgainEvent    -> onPlayAgain()
-            is WarningEvent      -> onWarning()
-            is StartRoundEvent   -> _readyCard.value = mutableListOf()
-            is JoinToGameEvent   -> {}
-            is PlayerShotEvent   -> {}
+            is GameOverEvent -> onGameOver(event)
+            is PlayAgainEvent -> onPlayAgain()
+            is WarningEvent -> onWarning()
+            is StartRoundEvent -> _readyCard.value = mutableListOf()
+            is JoinToGameEvent -> {}
+            is PlayerShotEvent -> {}
             else -> {}
         }
     }
@@ -243,7 +243,7 @@ class LanGamePlayViewModel @Inject constructor(
             )
         }
 
-        // ✅ Restart timer on every turn change
+        // Restart timer on every turn change
         restartTimer(isMyTurn = isMyTurn)
 
         val humanCount = event.playersInRoom.count { it?.isBot == false }
@@ -272,8 +272,7 @@ class LanGamePlayViewModel @Inject constructor(
                 cardCountState = event.card.size,
                 showCardsState = true,
                 cardPlayerIdState = event.playerId,
-                // ✅ isFindCardsInTable stays true until round ends (liar result)
-                // it is NOT cleared in clearShowCards anymore
+
                 isFindCardsInTable = true,
                 currentTurnId = event.nextPlayer,
                 isMyTurn = isMyTurn,
@@ -281,7 +280,7 @@ class LanGamePlayViewModel @Inject constructor(
             )
         }
 
-        // ✅ Restart timer for whoever's turn is next
+        // Restart timer for whoever's turn is next
         restartTimer(isMyTurn = isMyTurn)
 
         _oneShot.emit(UiOneShot.Speak(spokenText))
@@ -304,12 +303,10 @@ class LanGamePlayViewModel @Inject constructor(
                 spokenText = "",
                 isMyTurn = false,
                 bulletsBeforeShot = bulletsBeforeShot,
-                // ✅ Clear cards on table only here — when the round actually ends
                 isFindCardsInTable = false
             )
         }
 
-        // ✅ Stop timer when round ends
         stopTimer()
 
         delay(4000)
@@ -347,13 +344,8 @@ class LanGamePlayViewModel @Inject constructor(
         _oneShot.emit(UiOneShot.PlayWarningSound)
     }
 
-    // ─── Timer ────────────────────────────────────────────────────────────────
+    // timer
 
-    /**
-     * ✅ Cancels any running timer and starts a fresh 10→0 countdown.
-     * Only ticks when it's THIS player's turn.
-     * At 0 → auto-throws a random card.
-     */
     private fun restartTimer(isMyTurn: Boolean) {
         timerJob?.cancel()
         _timerValue.value = 0
@@ -396,7 +388,7 @@ class LanGamePlayViewModel @Inject constructor(
         _readyCard.value = mutableListOf()
     }
 
-    // ─── Bot Vote ─────────────────────────────────────────────────────────────
+    // Bot Voting
 
     private fun onBotVoteState(event: BotVoteStateEvent) {
         _uiState.update { s ->
@@ -421,7 +413,7 @@ class LanGamePlayViewModel @Inject constructor(
         _uiState.update { it.copy(showBotVoteDialog = false) }
     }
 
-    // ─── Play Again ───────────────────────────────────────────────────────────
+    // Play Again
 
     fun handlePlayAgain() {
         if (activePlayerState == LanPlayerState.Host.name) {
@@ -431,10 +423,8 @@ class LanGamePlayViewModel @Inject constructor(
         }
     }
 
-    // ─── UI Clear Helpers ─────────────────────────────────────────────────────
+    // UI Clear Helpers
 
-    // ✅ clearShowCards no longer touches isFindCardsInTable
-    // Cards on table stay visible until the round ends (liar call result)
     fun clearShowCards() {
         _uiState.update { it.copy(showCardsState = false, cardCountState = 0, cardPlayerIdState = -1) }
     }
@@ -443,7 +433,7 @@ class LanGamePlayViewModel @Inject constructor(
     fun clearPlayerCallLiar() = _uiState.update { it.copy(isPlayerCallingLiar = false, cardsUnderTest = listOf()) }
     fun clearSpokenText() = _uiState.update { it.copy(spokenText = "") }
 
-    // ─── One Shot Events ──────────────────────────────────────────────────────
+    // One Shot Events
 
     sealed class UiOneShot {
         data class Speak(val text: String) : UiOneShot()

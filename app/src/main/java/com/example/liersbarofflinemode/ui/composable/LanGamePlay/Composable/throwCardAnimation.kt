@@ -37,7 +37,6 @@ fun ThrowCardsAnimation(
                 ThrowDirection.RIGHT -> xOffset.snapTo(300f)
             }
 
-            // تشغيل الأنيميشن
             xOffset.animateTo(
                 targetValue = 0f,
                 animationSpec = tween(durationMillis = 500, easing = LinearOutSlowInEasing)

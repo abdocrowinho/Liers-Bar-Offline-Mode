@@ -22,7 +22,6 @@ object UDPBroadcaster {
             socket.broadcast = true
 
             while (isRunning) {
-                // Fix: read live players from the real server each iteration
                 val server = WebSocketServerManger.getServer()
                 val livePlayers = server?.players?.value?.values
                     ?.filterNotNull()

@@ -65,7 +65,6 @@ fun ShowBotVoteDialog(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Player slots grid — 2x2
                 val slots = (0 until 4).map { index ->
                     players.getOrNull(index)
                 }
@@ -101,7 +100,6 @@ fun ShowBotVoteDialog(
                                         .clip(RoundedCornerShape(8.dp))
                                 )
                             } else {
-                                // Empty slot — show dots
                                 Text(
                                     text = "...",
                                     color = Color(0xFF666666),
@@ -112,7 +110,6 @@ fun ShowBotVoteDialog(
                     }
                 }
 
-                // Vote counter
                 if (yesCount > 0) {
                     Text(
                         text = "$yesCount/$totalPlayers agreed",
@@ -121,7 +118,6 @@ fun ShowBotVoteDialog(
                     )
                 }
 
-                // Title
                 Text(
                     text = "Start the game with bots?",
                     color = Color.White,
@@ -129,12 +125,10 @@ fun ShowBotVoteDialog(
                     textAlign = TextAlign.Center
                 )
 
-                // Buttons
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    // Yes button
                     Button(
                         onClick = onYes,
                         modifier = Modifier.weight(1f),
@@ -146,7 +140,6 @@ fun ShowBotVoteDialog(
                         Text("✓  Yes", color = Color.White)
                     }
 
-                    // No button
                     Button(
                         onClick = onNo,
                         modifier = Modifier.weight(1f),

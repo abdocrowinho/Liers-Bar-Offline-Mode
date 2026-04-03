@@ -54,7 +54,6 @@ class GameWebSocketServer(port: Int) : WebSocketServer(InetSocketAddress(port)) 
     var serverHandler: ServerHandler? = null
     private var onStarted: (() -> Unit)? = null
 
-    // ✅ Host always uses a dedicated sentinel key — never null
     private val HOST_KEY: WebSocket = FakeBotSocket()
     private val hostConn get() = HOST_KEY
     private val hostPlayer get() = players.value[HOST_KEY]
@@ -150,7 +149,7 @@ class GameWebSocketServer(port: Int) : WebSocketServer(InetSocketAddress(port)) 
         onStarted?.invoke()
     }
 
-    // ─── Host actions ──────────────────────────────────────────────────────────
+    //Host actions
 
     fun hostPlayCard(listOfCard: List<Card>) {
         val currentHostPlayer = hostPlayer ?: return
@@ -306,7 +305,7 @@ class GameWebSocketServer(port: Int) : WebSocketServer(InetSocketAddress(port)) 
         dealCards()
     }
 
-    // ─── Internal ──────────────────────────────────────────────────────────────
+    //Internal
 
     fun dealCards() {
         Log.d("dealCards", "CALLED — roundStarted=${roundStarted.value}")
@@ -394,15 +393,14 @@ class GameWebSocketServer(port: Int) : WebSocketServer(InetSocketAddress(port)) 
         if (currentTurnId.value != currentBot.id) return
         if (currentBot.cards.isEmpty()) return
 
-        // ✅ Bot liar call logic:
-        // Bot calls liar if there are cards on the table AND it's suspicious enough.
-        // Suspicion increases the more cards are on the table (more chances of a bluff).
+        // Bot liar call
+
         val cardsOnTable = tablesCards.value.size
         val hasCardsOnTable = lastPlayedCards.value.isNotEmpty()
 
-        // ✅ Bot decides to call liar based on:
-        // - 20% base chance
-        // - +10% for every 2 cards already on the table (more cards = more bluffs likely)
+        // Bot decides to call liar based on:
+        // 20% base chance
+        //  +10% for every 2 cards already on the table (more cards = more bluffs likely)
         val liarCallChance = if (hasCardsOnTable) {
             20 + (cardsOnTable / 2) * 10
         } else {
@@ -412,7 +410,7 @@ class GameWebSocketServer(port: Int) : WebSocketServer(InetSocketAddress(port)) 
         val shouldCallLiar = hasCardsOnTable && (1..100).random() <= liarCallChance
 
         if (shouldCallLiar) {
-            // ✅ Bot calls liar
+            // Bot calls liar
             broadcastEvent(LiarCallEvent(callerId = currentBot.id))
             // Process liar call result directly on server
             Thread.sleep(1200)
@@ -445,7 +443,7 @@ class GameWebSocketServer(port: Int) : WebSocketServer(InetSocketAddress(port)) 
         }
     }
 
-    // ✅ Processes liar call result when a bot is the caller
+    // Processes liar call result when a bot is the caller
     private fun processBotLiarCall(callerBot: LanUserEntity) {
         val hasWrongCard = lastPlayedCards.value
             .any { it.rank != baseTable.value?.rank && it.rank != Rank.Joker }

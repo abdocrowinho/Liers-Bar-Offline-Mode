@@ -45,7 +45,6 @@ class GameWebSocketClient(
             onRoomUpdate = { event ->
                 playersInRoom.value = event.playersInRoom.toMutableList()
                 tablesCards = event.tablesCards
-                // Bug 1 fix: safe assignment, don't crash if null
                 if (event.baseTable != null) baseTable = event.baseTable
                 roundCounter = event.round ?: 0
                 _messageEvent.tryEmit(event)
@@ -80,11 +79,9 @@ class GameWebSocketClient(
         try {
             val event = JsonHelper.Json.decodeFromString(Event.serializer(), message)
             println("✅ Decoded event: ${event::class.simpleName}")
-            // Bug 3 fix: only handle via ClientHandler, no second emit
             client?.handle(conn = connection, event)
         } catch (e: Exception) {
             e.printStackTrace()
-            println("client-> ❌ Failed to parse event : ${e.message}")
         }
     }
 

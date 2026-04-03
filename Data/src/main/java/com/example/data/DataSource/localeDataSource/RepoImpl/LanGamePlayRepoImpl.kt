@@ -69,7 +69,6 @@ class LanGamePlayRepoImpl @Inject constructor(
         webSocketClient.connect()
     }
 
-    // Fix: separate function called AFTER navigation is complete
     override suspend fun sendReconnectEvent(deviceId: String, playerName: String) {
         repeat(10) { attempt ->
             if (webSocketClient.isOpen) return@repeat

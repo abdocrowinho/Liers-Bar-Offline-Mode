@@ -9,7 +9,6 @@ fun createTts(context: Context): TextToSpeech {
     var tts: TextToSpeech? = null
     tts = TextToSpeech(context) { status ->
         if (status == TextToSpeech.SUCCESS) {
-            // Fix: "GB" is the correct ISO code, not "UK"
             val locale = Locale("en", "GB")
             val result = tts?.setLanguage(locale)
 
@@ -27,7 +26,6 @@ fun createTts(context: Context): TextToSpeech {
                         !it.name.contains("female", true) &&
                         (it.name.contains("en-gb", true) || it.name.contains("en-us", true))
             }
-            voice?.let { tts?.voice = it }
         }
     }
     return tts

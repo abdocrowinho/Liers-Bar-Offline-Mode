@@ -42,7 +42,7 @@ fun LanPlayerAvatar(
     playerState: LanUserEntity,
     modifier: Modifier,
     size: Dp,
-    // ✅ timerValue: actual countdown number from ViewModel (10→0), null = not my turn
+    // ✅ timerValue
     timerValue: Int? = null,
     currentTurnId: Int? = null,
     viewModel: LanGamePlayViewModel? = null,
@@ -50,7 +50,7 @@ fun LanPlayerAvatar(
     val bulletCount = playerState.remainingBullets.coerceAtLeast(0)
     val isActiveTurn = playerState.id == currentTurnId && playerState.isAlive
 
-    // ✅ Timer color: red when urgent, amber mid-range, green when safe
+    // ✅ Timer color
     val timerColor = when {
         timerValue == null || timerValue <= 0 -> Color.Transparent
         timerValue <= 3 -> Color(0xFFE24B4A)
@@ -66,7 +66,6 @@ fun LanPlayerAvatar(
 
             Box(contentAlignment = Alignment.Center) {
 
-                // Avatar image — no circle, just border highlight on active turn
                 AsyncImage(
                     model = playerState.image,
                     contentDescription = "Player Avatar",
@@ -88,7 +87,6 @@ fun LanPlayerAvatar(
                         }
                 )
 
-                // ✅ Timer number — shown bottom-center of avatar, only when it's my turn
                 if (isActiveTurn && timerValue != null && timerValue > 0) {
                     Text(
                         text = "$timerValue",
@@ -107,7 +105,6 @@ fun LanPlayerAvatar(
                 }
             }
 
-            // Player name / dead label
             Text(
                 text = if (playerState.isAlive) playerState.name else "dead",
                 fontSize = 14.sp,
@@ -118,7 +115,6 @@ fun LanPlayerAvatar(
 
         Spacer(modifier = Modifier.width(GetWidthConf() * .003f))
 
-        // Bullets column
         LazyColumn(verticalArrangement = Arrangement.Center) {
             items(bulletCount) { index ->
                 Image(

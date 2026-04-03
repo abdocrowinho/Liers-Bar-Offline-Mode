@@ -59,12 +59,10 @@ fun TablePlayers(
     val tableState by lanGamePlayViewModel.uiState.collectAsState()
     val readyCards by lanGamePlayViewModel.readyCard.collectAsState()
 
-    // ✅ Real countdown timer from ViewModel — counts 10→0, only ticks on my turn
     val timerValue by lanGamePlayViewModel.timerValue.collectAsState()
 
     val playerState = MangerLanPlayerState.state.collectAsState().value
 
-    // ✅ TTS forced to English regardless of device language
     val tts = remember { mutableStateOf<TextToSpeech?>(null) }
     DisposableEffect(context) {
         val ttsInstance = TextToSpeech(context) { status ->
@@ -104,7 +102,6 @@ fun TablePlayers(
                     }
                 }
                 is LanGamePlayViewModel.UiOneShot.Speak -> {
-                    // ✅ Force English on every speak call too
                     tts.value?.language = Locale.ENGLISH
                     tts.value?.speak(event.text, TextToSpeech.QUEUE_FLUSH, null, null)
                     if (event.text.isNotEmpty()) {
@@ -152,7 +149,6 @@ fun TablePlayers(
 
             WarningBox(isWarning = isWarning)
 
-            // ✅ Pass real timerValue from ViewModel — not a static 10
             LanPlayerAvatar(
                 rotate = 0f,
                 playerState = me,
@@ -188,7 +184,7 @@ fun TablePlayers(
                 activePlayer = me
             )
 
-            // ✅ isFindCardsInTable is now only true while cards are on the table (cleared on liar result)
+
             if (tableState.isFindCardsInTable) {
                 Image(
                     painter = painterResource(id = com.example.domain.R.drawable.card_back),

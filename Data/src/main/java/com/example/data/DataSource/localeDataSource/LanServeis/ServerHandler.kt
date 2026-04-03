@@ -152,7 +152,6 @@ class ServerHandler(
             }
 
             is ReconnectEvent -> {
-                // New player — handle as normal join
                 handle(conn, JoinToGameEvent(
                     player = LanUserEntity(
                         name = event.playerName,
@@ -161,7 +160,6 @@ class ServerHandler(
                         isAlive = true,
                         image = "https://robohash.org/${event.playerName}?set=set5",
                         id = 0,
-                        // Fix: use actual IP from connection, not empty string
                         ipAddress = conn?.remoteSocketAddress?.address?.hostAddress ?: "",
                         cards = mutableListOf(),
                         isHost = false,
@@ -187,7 +185,6 @@ class ServerHandler(
 
                 server.botVoteYesCount.value += 1
 
-                // Fix: count only human players, not bots
                 val totalHumans = server.players.value.values
                     .filterNotNull()
                     .count { !it.isBot }
